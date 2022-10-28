@@ -1,0 +1,10 @@
+stages:
+  - formatting
+
+black:
+  stage: formatting
+  script:
+    - black --diff --check .
+  image: nexus.intrepidcs.net:5000/fw_images/black:1.1
+  tags:
+    - linux-build
