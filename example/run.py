@@ -22,8 +22,10 @@ TCL_FILES = {
     "device_b": FILE_DIR / "device_b/build.tcl",
 }
 
+# Vivado version to use for each build
 VIVADO_VERSIONS = {
-    "radethermax1g": "2019.1",
+    "device_a": "2019.1",
+    "device_b": "2019.1",
 }
 
 # deploy to Xilinx SDK hardware platform directory
