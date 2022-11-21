@@ -509,7 +509,7 @@ def _add_deploy_args(parser):
 
 
 def build_block(
-    blk_dir, top_level, constraints=None, other_files=None, device=None, generics=None
+    blk_dir, top_level=None, constraints=None, other_files=None, device=None, generics=None, vivado_version=None
 ):
     """
     Runs a build for a block with a manifest
@@ -521,6 +521,7 @@ def build_block(
         other_files: Any other vhdl files required to complete the build
         device:      Part number of a xilinx part to run the build against, 7020 by default
         generics:    Optional generics to top level
+        vivado_version:     Vivado version
 
     Returns:
         None
@@ -532,7 +533,10 @@ def build_block(
         device = ZYNQ_7020_2
 
     build_dir = BASE_DIR / "scratch/build" / blk_dir.name
-    dsn_files = [top_level]
+    if top_level:
+        dsn_files = [top_level]
+    else:
+        dsn_files = []
     if other_files:
         dsn_files.extend(other_files)
     dsn_file_tuples = [(file, "VHDL 2008") for file in dsn_files]
@@ -562,4 +566,4 @@ def build_block(
     args = parser.parse_args()
     # Don't generate a bitstream since this is just for checking stuff
     args.impl_only = True
-    build(BUILD_BLK_TCL_SCRIPT, args, build_dir, tcl_args)
+    build(BUILD_BLK_TCL_SCRIPT, args, build_dir, tcl_args, vivado_version=vivado_version)
