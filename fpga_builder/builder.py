@@ -59,6 +59,8 @@ from .utils import (
 )
 from . import deployer
 
+THIS_DIR = Path(__file__).parent
+
 BASE_DIR = Path(environ.get("BASE_DIR", ".")).resolve()
 
 BUILD_BLK_TCL_SCRIPT = FILE_DIR / "../build_block.tcl"
@@ -527,7 +529,8 @@ def build_block(
         None
 
     """
-    from vivado_util import generate_filelist
+    sys.path.append(THIS_DIR.parents[1] / "manifest_reader")
+    from manifest_reader.vivado_util import generate_filelist
 
     if device is None:
         device = ZYNQ_7020_2
