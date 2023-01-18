@@ -413,6 +413,13 @@ proc build_device_from_params {params} {
     puts "WARNING: No hdl files specified, assuming all are in IP cores"
   }
 
+  set filelist [pwd]/filelist.tcl
+  if { [file exists $filelist] } {
+    add_files_from_filelist $filelist
+  } else {
+    puts "No filelist provided"
+  }
+
   # #############################################################################
   # IP files
   # #############################################################################

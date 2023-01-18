@@ -83,6 +83,7 @@ def build_default(
     tcl_arg_dict=None,
     deploy_hw_dirs=None,
     vivado_versions=None,
+    other_files=None
 ):
     """
     Parses arguments and runs the build on the selected device
@@ -176,6 +177,11 @@ def build_default(
                 vivado_version = vivado_versions[device]
             else:
                 vivado_version = None
+            if other_files:
+                # Workaround so doesn't always have to be next to it
+                sys.path.append(THIS_DIR.parents[1] / "manifest_reader")
+                from manifest_reader.vivado_util import generate_filelist
+                generate_filelist(caller_dir(), run_dir, other_files=other_files)
             build(run_tcl, args, run_dir, tcl_args, vivado_version)
         if do_deploy:
             print(f"Deploying {device}...")
@@ -195,7 +201,6 @@ def build_default(
                 output_dir,
                 vivado_version=vivado_version,
             )
-
 
 def open_vivado_gui(project, vivado_version, run_dir):
     vivado_cmd = get_vivado_cmd(vivado_version)
@@ -508,6 +513,27 @@ def _add_deploy_args(parser):
     group = parser.add_argument_group("deploy", "Deploy Arguments")
     group = deployer.setup_deploy_parser(group)
     return parser
+
+def get_other_files(from_dir, already_have=None, recursive=True, files_93=None):
+    if not from_dir.exists():
+        err(f"{from_dir} does not exist!")
+        exit(1)
+    search_func = from_dir.rglob if recursive else from_dir.glob
+    files = already_have["vhdl"] if already_have else {}
+    for file in search_func("*.vhd"):
+        lib_name = file.parent.name
+        if lib_name == "dsn":
+            lib_name = file.parents[2].name
+        if files_93 and file.name in files_93:
+            standard = "VHDL"
+        else:
+            standard = "VHDL 2008"
+        file_obj = (file, standard)
+        if lib_name not in files:
+            files[lib_name] = []
+        files[lib_name].append(file_obj)
+    ret = {"vhdl" : files, "xdc" : []}
+    return ret
 
 
 def build_block(
