@@ -42,6 +42,7 @@ import socket
 import sys
 from pprint import pprint
 from os import environ
+import tarfile
 from .utils import (
     warning,
     err,
@@ -83,7 +84,8 @@ def build_default(
     tcl_arg_dict=None,
     deploy_hw_dirs=None,
     vivado_versions=None,
-    other_files=None
+    other_files=None,
+    and_tar=False,
 ):
     """
     Parses arguments and runs the build on the selected device
@@ -182,7 +184,7 @@ def build_default(
                 sys.path.append(THIS_DIR.parents[1] / "manifest_reader")
                 from manifest_reader.vivado_util import generate_filelist
                 generate_filelist(caller_dir(), run_dir, other_files=other_files)
-            build(run_tcl, args, run_dir, tcl_args, vivado_version)
+            build(run_tcl, args, run_dir, tcl_args, vivado_version, and_tar)
         if do_deploy:
             print(f"Deploying {device}...")
             # Deploy stuff
@@ -208,7 +210,7 @@ def open_vivado_gui(project, vivado_version, run_dir):
     run_cmd(cmd, blocking=False, cwd=run_dir)
 
 
-def build(run_tcl, args, run_dir=None, tcl_args=None, vivado_version=None):
+def build(run_tcl, args, run_dir=None, tcl_args=None, vivado_version=None, and_tar=False):
     """
     R the build on the selected device
 
@@ -231,6 +233,7 @@ def build(run_tcl, args, run_dir=None, tcl_args=None, vivado_version=None):
         args.force,
         tcl_args,
         vivado_version,
+        and_tar
     )
     stats = get_stats(run_dir, args.num_threads)
     print(stats)
@@ -247,6 +250,7 @@ def run_vivado(
     force,
     tcl_args,
     version=None,
+    and_tar=False
 ):
     """
     Runs vivado to run the build of the selected run directory
@@ -321,6 +325,14 @@ def run_vivado(
             info(line)
 
     run_cmd(cmd_string, cwd=run_dir, line_handler=line_handler)
+    if and_tar:
+        tar_target = output_dir / "output.tar.xz"
+        files = []
+        for ext in (".rpt", ".hdf", ".xsa", ".bit", ".log"):
+            files.extend(list(output_dir.glob(f"*{ext}")))
+        with tarfile.open(tar_target, "w:xz") as tar:
+            for file in files:
+                tar.add(file, arcname=file.name)
 
 
 def get_vivado_cmd(version):
