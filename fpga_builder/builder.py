@@ -57,8 +57,10 @@ from .utils import (
     caller_dir,
     XILINX_BIN_EXTENSION,
     check_vitis,
+    check_output,
 )
 from . import deployer
+import os
 
 THIS_DIR = Path(__file__).parent
 
@@ -326,13 +328,38 @@ def run_vivado(
 
     run_cmd(cmd_string, cwd=run_dir, line_handler=line_handler)
     if and_tar:
+        pin_txt = get_changeset_numbers()
+        pin_file = output_dir / "pin.txt"
+        pin_file.write_text(pin_txt)
         tar_target = output_dir / "output.tar.xz"
         files = []
-        for ext in (".rpt", ".hdf", ".xsa", ".bit", ".log"):
+        for ext in (".rpt", ".hdf", ".xsa", ".bit", ".log", "*.txt"):
             files.extend(list(output_dir.glob(f"*{ext}")))
         with tarfile.open(tar_target, "w:xz") as tar:
             for file in files:
                 tar.add(file, arcname=file.name)
+
+
+def get_app_name():
+    app_name = Path(deployer.get_remote_url()).stem
+    return app_name
+
+def get_submodule_commits():
+    raw_output = check_output("git submodule status --recursive")
+    ret = {}
+    for line in raw_output.split("\n"):
+        line = line.strip()
+        commit, name, _ = line.split(" ")
+        ret[name] = commit
+    return ret
+
+
+def get_changeset_numbers():
+    os.chdir(deployer.get_git_root_directory())
+    ret = {get_app_name() : deployer.get_current_commit_hash()}
+    ret.update(get_submodule_commits())
+    as_string = " ".join([f"{k} {v}" for k, v in ret.items()])
+    return as_string
 
 
 def get_vivado_cmd(version):
