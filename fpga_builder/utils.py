@@ -212,7 +212,7 @@ def repo_clean():
 
     """
     cmd = f"git status --porcelain"
-    output = subprocess.run(cmd, capture_output=True, shell=True).stdout
+    output = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, shell=True).stdout
     if output:
         output = cmd + "\n" + output.decode("utf-8")
         # This git command should be empty if everything is good to go
