@@ -333,7 +333,7 @@ def run_vivado(
         pin_file.write_text(pin_txt)
         tar_target = output_dir / "output.tar.xz"
         files = []
-        for ext in (".rpt", ".hdf", ".xsa", ".bit", ".log", "*.txt"):
+        for ext in (".rpt", ".hdf", ".xsa", ".bit", ".log", ".txt"):
             files.extend(list(output_dir.glob(f"*{ext}")))
         with tarfile.open(tar_target, "w:xz") as tar:
             for file in files:
