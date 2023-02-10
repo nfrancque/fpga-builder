@@ -331,7 +331,8 @@ def run_vivado(
         pin_txt = get_changeset_numbers()
         pin_file = output_dir / "pin.txt"
         pin_file.write_text(pin_txt)
-        tar_target = output_dir / "output.tar.xz"
+        filename = f"{get_app_name()}-{deployer.get_current_branch()}-{deployer.get_current_commit_hash()}.tar.xz"
+        tar_target = output_dir / filename
         files = []
         for ext in (".rpt", ".hdf", ".xsa", ".bit", ".log", ".txt"):
             files.extend(list(output_dir.glob(f"*{ext}")))
