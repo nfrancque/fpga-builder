@@ -328,7 +328,7 @@ def run_vivado(
         pin_txt = get_changeset_numbers()
         pin_file = output_dir / "pin.txt"
         pin_file.write_text(pin_txt)
-        filenamebase = f"{get_app_name()}-ZU{build_args.ultrascale}-{deployer.get_current_branch(for_jenkins=True)}.j{deployer.get_current_job()}"
+        filenamebase = f"{get_app_name()}-ZU{build_args.ultrascale}-{build_args.branch}.j{build_args.job}"
         tar_target = output_dir / f"{filenamebase}.{deployer.get_current_commit_hash()}.tar.xz"
         files = []
         for ext in (".rpt", ".hdf", ".xsa", ".bit", ".log", ".txt"):
@@ -534,6 +534,12 @@ def _add_build_args(parser):
         "--job",
         default=0,
         help="Jenkins job number"
+    )
+    group.add_argument(
+        "-b",
+        "--branch",
+        default="NONE",
+        help="Git branch"
     )
     group.add_argument(
         "-u",

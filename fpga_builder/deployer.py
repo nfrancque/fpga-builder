@@ -172,7 +172,7 @@ def deploy_(
         print(f"\t{msg}")
 
 
-def get_current_branch(for_jenkins=False, for_gitlab=False, cwd=None):
+def get_current_branch(for_gitlab=False, cwd=None):
     """
     Gets the name of the branch currently active in the git repo at cwd
 
@@ -183,9 +183,7 @@ def get_current_branch(for_jenkins=False, for_gitlab=False, cwd=None):
         The branch name
 
     """
-    if for_jenkins:
-        branch = environ.get("BRANCH_NAME")
-    elif for_gitlab:
+    if for_gitlab:
         branch = environ.get("CI_COMMIT_BRANCH")
     else:
         branch = check_output("git rev-parse --abbrev-ref HEAD", cwd=cwd)
