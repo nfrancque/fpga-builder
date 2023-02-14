@@ -319,7 +319,11 @@ def run_vivado(
         else:
             info(line)
 
-    run_cmd(cmd_string, cwd=run_dir, line_handler=line_handler)
+    print("TESTING COMPRESSION WITH TEST FILE")
+    #run_cmd(cmd_string, cwd=run_dir, line_handler=line_handler)
+    with open(os.path.join(output_dir, f"TEST_ZU{build_args.ultrascale}.txt"), "w") as testFile:
+        testFile.write(f"Testfile to be compressed for ZU{build_args.ultrascale}")
+
     if and_tar:
         pin_txt = get_changeset_numbers()
         pin_file = output_dir / "pin.txt"
@@ -332,7 +336,7 @@ def run_vivado(
         with tarfile.open(tar_target, "w:xz") as tar:
             for file in files:
                 tar.add(file, arcname=file.name)
-        generate_build_info(ultrascale, filenamebase, output_dir)
+        generate_build_info(build_args.ultrascale, filenamebase, output_dir)
 
 
 # Generates build info file used by auto pinner
