@@ -61,6 +61,7 @@ from .utils import (
 )
 from . import deployer
 import os
+import re
 
 THIS_DIR = Path(__file__).parent
 
@@ -228,12 +229,7 @@ def build(run_tcl, args, run_dir=None, tcl_args=None, vivado_version=None, and_t
     run_vivado(
         run_tcl,
         run_dir,
-        args.num_threads,
-        args.bd_only,
-        args.synth_only,
-        args.impl_only,
-        args.force,
-        tcl_args,
+        args,
         vivado_version,
         and_tar
     )
@@ -245,11 +241,7 @@ def build(run_tcl, args, run_dir=None, tcl_args=None, vivado_version=None, and_t
 def run_vivado(
     build_tcl,
     run_dir,
-    num_threads,
-    bd_only,
-    synth_only,
-    impl_only,
-    force,
+    build_args,
     tcl_args,
     version=None,
     and_tar=False
@@ -278,7 +270,7 @@ def run_vivado(
         version = "2019.1"
     vivado_cmd = get_vivado_cmd(version)
     script_path = Path(build_tcl).resolve()
-    stats_file = get_stats_file(run_dir, num_threads)
+    stats_file = get_stats_file(run_dir, build_args.num_threads)
     output_dir = stats_file.parent
     if output_dir.exists():
         if not force:
@@ -288,14 +280,14 @@ def run_vivado(
     output_dir.mkdir(parents=True)
     log = output_dir / "vivado.log"
     stats_file = str(stats_file.as_posix())
-    bd_only_arg = 1 if bd_only else 0
-    synth_only_arg = 1 if synth_only else 0
-    impl_only_arg = 1 if impl_only else 0
-    force_arg = 1 if force else 0
+    bd_only_arg = 1 if build_args.bd_only else 0
+    synth_only_arg = 1 if build_args.synth_only else 0
+    impl_only_arg = 1 if build_args.impl_only else 0
+    force_arg = 1 if build_args.force else 0
     use_vitis_arg = check_vitis(version)
     default_args = [
         stats_file,
-        num_threads,
+        build_args.num_threads,
         bd_only_arg,
         synth_only_arg,
         impl_only_arg,
@@ -331,19 +323,42 @@ def run_vivado(
         pin_txt = get_changeset_numbers()
         pin_file = output_dir / "pin.txt"
         pin_file.write_text(pin_txt)
-        filename = f"{get_app_name()}-{deployer.get_current_branch()}-{deployer.get_current_commit_hash()}.tar.xz"
-        tar_target = output_dir / filename
+        filenamebase = f"{get_app_name()}-ZU{build_args.ultrascale}-{deployer.get_current_branch()}.j{build_args.job}"
+        tar_target = output_dir / f"{filenamebase}.{deployer.get_current_commit_hash()}.tar.xz"
         files = []
         for ext in (".rpt", ".hdf", ".xsa", ".bit", ".log", ".txt"):
             files.extend(list(output_dir.glob(f"*{ext}")))
         with tarfile.open(tar_target, "w:xz") as tar:
             for file in files:
                 tar.add(file, arcname=file.name)
+        generate_build_info(ultrascale, filenamebase, output_dir)
+
+
+# Generates build info file used by auto pinner
+def generate_build_info(ultrascale, filenamebase, output_dir):
+    baseArtifact = "https://artifactory.deere.com/isg-machine-automation/builds/dev/fpga/"
+    ultrascaleName = "" if ultrascale != 5 else f"ZU{ultrascale}"
+
+    buildInfoFile = f"{filename}-BuildInfo.txt"
+    buildSystemPin = check_output("git --git-dir BuildSystem/.git rev-parse HEAD")
+    fpgaIpPin = check_output("git --git-dir src/fpga-ip/.git rev-parse HEAD")
+    artifact = f"{baseArtifact}/{filename}"
+    
+    with open(os.path.join(output_dir, buildInfoFile), "w") as file:
+        file.write(f"BuildSystemPin={buildSystemPin}\n" \
+                   f"src/fpga-ip={fpgaIpPin}\n" \
+                   f"Artifact={artifact}\n")
+        with open(os.path.join("BuildSystem", "BspPlatformPin.sh"), "r") as bspPinFile:
+            pinSearch = re.compile(f"SocFixedVersion|UtilitiesVersion|soc1{ultrascaleName}Fsbl|soc2{ultrascaleName}Fsbl")
+            for line in bspPinFile:
+                if pinSearch.match(line):
+                    file.write(f"{line.strip()}\n")
 
 
 def get_app_name():
-    app_name = Path(deployer.get_remote_url()).stem
+    app_name = Path(deployer.get_remote_url()).stem.replace(".git", "")
     return app_name
+
 
 def get_submodule_commits():
     raw_output = check_output("git submodule status --recursive")
@@ -509,6 +524,18 @@ def get_parser(device_names):
 
 def _add_build_args(parser):
     group = parser.add_argument_group("build", "Build Arguments")
+    group.add_argument(
+        "-j",
+        "--job",
+        default=0,
+        help="Jenkins job number"
+    )
+    group.add_argument(
+        "-u",
+        "--ultrascale",
+        default=4,
+        help="Ultrascale version"
+    )
     group.add_argument(
         "-p",
         "--num-threads",
