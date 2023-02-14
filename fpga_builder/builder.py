@@ -328,7 +328,7 @@ def run_vivado(
         pin_txt = get_changeset_numbers()
         pin_file = output_dir / "pin.txt"
         pin_file.write_text(pin_txt)
-        filenamebase = f"{get_app_name()}-ZU{build_args.ultrascale}-{deployer.get_current_branch()}.j{build_args.job}"
+        filenamebase = f"{get_app_name()}-ZU{build_args.ultrascale}-{check_output("git rev-parse --abbrev-ref HEAD")}.j{build_args.job}"
         tar_target = output_dir / f"{filenamebase}.{deployer.get_current_commit_hash()}.tar.xz"
         files = []
         for ext in (".rpt", ".hdf", ".xsa", ".bit", ".log", ".txt"):

@@ -186,7 +186,7 @@ def get_current_branch(for_gitlab=False, cwd=None):
     if for_gitlab:
         branch = environ.get("CI_COMMIT_BRANCH")
     else:
-        branch = check_output("git rev-parse HEAD", cwd=cwd)
+        branch = check_output("git rev-parse --abbrev-ref HEAD", cwd=cwd)
         branch = branch.strip().replace("\n", "")
     return branch
 
