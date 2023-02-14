@@ -344,10 +344,10 @@ def generate_build_info(ultrascale, filenamebase, output_dir):
     baseArtifact = "https://artifactory.deere.com/isg-machine-automation/builds/dev/fpga/"
     ultrascaleName = "" if ultrascale != 5 else f"ZU{ultrascale}"
 
-    buildInfoFile = f"{filename}-BuildInfo.txt"
+    buildInfoFile = f"{filenamebase}-BuildInfo.txt"
     buildSystemPin = check_output("git --git-dir BuildSystem/.git rev-parse HEAD")
     fpgaIpPin = check_output("git --git-dir src/fpga-ip/.git rev-parse HEAD")
-    artifact = f"{baseArtifact}/{filename}"
+    artifact = f"{baseArtifact}/{filenamebase}.{deployer.get_current_commit_hash()}.tar.xz"
     
     with open(os.path.join(output_dir, buildInfoFile), "w") as file:
         file.write(f"BuildSystemPin={buildSystemPin}\n" \
