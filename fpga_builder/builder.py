@@ -341,7 +341,7 @@ def run_vivado(
 
 # Generates build info file used by auto pinner
 def generate_build_info(ultrascale, filenamebase, output_dir):
-    baseArtifact = "https://artifactory.deere.com/isg-machine-automation/builds/dev/fpga/"
+    baseArtifact = "https://artifactory.deere.com/isg-machine-automation/builds/dev/fpga"
     ultrascaleName = "" if ultrascale != 5 else f"ZU{ultrascale}"
 
     buildInfoFile = f"{filenamebase}-BuildInfo.txt"
