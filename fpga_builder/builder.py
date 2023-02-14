@@ -318,45 +318,41 @@ def run_vivado(
             warning(line)
         else:
             info(line)
-
-    print("TESTING COMPRESSION WITH TEST FILE")
-    #run_cmd(cmd_string, cwd=run_dir, line_handler=line_handler)
-    with open(os.path.join(output_dir, f"TEST_ZU{build_args.ultrascale}.txt"), "w") as testFile:
-        testFile.write(f"Testfile to be compressed for ZU{build_args.ultrascale}")
+    run_cmd(cmd_string, cwd=run_dir, line_handler=line_handler)
 
     if and_tar:
         pin_txt = get_changeset_numbers()
         pin_file = output_dir / "pin.txt"
         pin_file.write_text(pin_txt)
-        filenamebase = f"{get_app_name()}-ZU{build_args.ultrascale}-{build_args.branch}.j{build_args.job}"
-        tar_target = output_dir / f"{filenamebase}.{deployer.get_current_commit_hash()}.tar.xz"
+        tarname = f"{get_app_name()}-ZU{build_args.ultrascale}-{build_args.branch}.j{build_args.job}.{deployer.get_current_commit_hash()[:8]}.tar.xz"
+        buildinfoname = f"ZU{build_args.ultrascale}-{build_args.branch}-{build_args.product}FPGA-BuildInfo-j{build_args.job}.txt"
+        tar_target = output_dir / tarname
         files = []
         for ext in (".rpt", ".hdf", ".xsa", ".bit", ".log", ".txt"):
             files.extend(list(output_dir.glob(f"*{ext}")))
         with tarfile.open(tar_target, "w:xz") as tar:
             for file in files:
                 tar.add(file, arcname=file.name)
-        generate_build_info(build_args.ultrascale, filenamebase, output_dir)
+        generate_build_info(build_args.ultrascale, tarname, buildinfoname, output_dir)
 
 
 # Generates build info file used by auto pinner
-def generate_build_info(ultrascale, filenamebase, output_dir):
+def generate_build_info(ultrascale, tarname, buildinfoname, output_dir):
     baseArtifact = "https://artifactory.deere.com/isg-machine-automation/builds/dev/fpga"
     ultrascaleName = "" if ultrascale != 5 else f"ZU{ultrascale}"
 
-    buildInfoFile = f"{filenamebase}-BuildInfo.txt"
     buildSystemPin = check_output("git --git-dir BuildSystem/.git rev-parse HEAD")
     fpgaIpPin = check_output("git --git-dir src/fpga-ip/.git rev-parse HEAD")
-    artifact = f"{baseArtifact}/{filenamebase}.{deployer.get_current_commit_hash()}.tar.xz"
+    artifact = f"{baseArtifact}/{tarname}"
     
-    with open(os.path.join(output_dir, buildInfoFile), "w") as file:
+    with open(os.path.join(output_dir, buildinfoname), "w") as file:
         file.write(f"BuildSystemPin={buildSystemPin}\n" \
                    f"src/fpga-ip={fpgaIpPin}\n" \
                    f"Artifact={artifact}\n")
         with open(os.path.join("BuildSystem", "BspPlatformPin.sh"), "r") as bspPinFile:
-            pinSearch = re.compile(f"SocFixedVersion|UtilitiesVersion|soc1{ultrascaleName}Fsbl|soc2{ultrascaleName}Fsbl")
+            bspPinSearch = re.compile(f"SocFixedVersion|UtilitiesVersion|soc1{ultrascaleName}Fsbl|soc2{ultrascaleName}Fsbl")
             for line in bspPinFile:
-                if pinSearch.match(line):
+                if bspPinSearch.match(line):
                     file.write(f"{line.strip()}\n")
 
 
@@ -530,22 +526,24 @@ def get_parser(device_names):
 def _add_build_args(parser):
     group = parser.add_argument_group("build", "Build Arguments")
     group.add_argument(
-        "-j",
         "--job",
         default=0,
         help="Jenkins job number"
     )
     group.add_argument(
-        "-b",
         "--branch",
         default="NONE",
         help="Git branch"
     )
     group.add_argument(
-        "-u",
         "--ultrascale",
         default=4,
         help="Ultrascale version"
+    )
+    group.add_argument(
+        "--product",
+        help="FPGA product (Stereo or Mono)",
+        choices=["Mono", "Stereo"]
     )
     group.add_argument(
         "-p",
