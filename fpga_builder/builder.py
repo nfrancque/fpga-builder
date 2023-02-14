@@ -274,7 +274,7 @@ def run_vivado(
     stats_file = get_stats_file(run_dir, build_args.num_threads)
     output_dir = stats_file.parent
     if output_dir.exists():
-        if not force:
+        if not build_args.force:
             err(f"{output_dir} already exists, provide --force to delete")
             exit(1)
         shutil.rmtree(output_dir)
@@ -328,7 +328,7 @@ def run_vivado(
         pin_txt = get_changeset_numbers()
         pin_file = output_dir / "pin.txt"
         pin_file.write_text(pin_txt)
-        filenamebase = f"{get_app_name()}-ZU{build_args.ultrascale}-{check_output("git rev-parse --abbrev-ref HEAD")}.j{build_args.job}"
+        filenamebase = f"{get_app_name()}-ZU{build_args.ultrascale}-{deployer.get_current_branch(for_jenkins=True)}.j{deployer.get_current_job()}"
         tar_target = output_dir / f"{filenamebase}.{deployer.get_current_commit_hash()}.tar.xz"
         files = []
         for ext in (".rpt", ".hdf", ".xsa", ".bit", ".log", ".txt"):
