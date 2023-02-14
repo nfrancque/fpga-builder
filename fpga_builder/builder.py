@@ -230,6 +230,7 @@ def build(run_tcl, args, run_dir=None, tcl_args=None, vivado_version=None, and_t
         run_tcl,
         run_dir,
         args,
+        tcl_args,
         vivado_version,
         and_tar
     )
