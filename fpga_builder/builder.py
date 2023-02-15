@@ -339,7 +339,7 @@ def run_vivado(
 # Generates build info file used by auto pinner
 def generate_build_info(ultrascale, tarname, buildinfoname, output_dir):
     baseArtifact = "https://artifactory.deere.com/isg-machine-automation/builds/dev/fpga"
-    ultrascaleName = "" if ultrascale != 5 else f"ZU{ultrascale}"
+    ultrascaleName = "" if ultrascale != "5" else f"ZU{ultrascale}"
 
     buildSystemPin = check_output("git --git-dir BuildSystem/.git rev-parse HEAD")
     fpgaIpPin = check_output("git --git-dir src/fpga-ip/.git rev-parse HEAD")
