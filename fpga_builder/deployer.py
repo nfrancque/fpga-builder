@@ -191,14 +191,6 @@ def get_current_branch(for_gitlab=False, cwd=None):
     return branch
 
 
-def get_current_job():
-    """
-    Returns:
-        Jenkins job number
-    """
-    return environ.get("BUILD_NUMBER")
-
-
 def get_current_commit_hash():
     """
     Gets the hash of the commit currently active in the git repo at cwd
