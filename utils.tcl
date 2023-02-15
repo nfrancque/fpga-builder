@@ -189,7 +189,7 @@ proc build {proj_name top_name proj_dir} {
       set sysdef ${proj_dir}/${proj_name}.runs/impl_1/${top_name}.sysdef
       write_sysdef -force -hwdef ${hwdef} -bitfile ${bitstream} -file ${sysdef}
 
-      set hdf $output_dir/${top_name}.hdf
+      set hdf $output_dir/system.hdf
       file copy -force ${sysdef} ${hdf}
     } else {
       puts "ERROR: No HDF found! Should be $hwdef"
