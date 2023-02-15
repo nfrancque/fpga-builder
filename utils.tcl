@@ -371,6 +371,7 @@ proc build_device_from_params {params} {
   set impl_strategy [dict get $params impl_strategy ]
   set origin_dir [dict get $params origin_dir]
   set use_power_opt [dict_get_default $params use_power_opt 1]
+  set use_post_route_phys_opt [dict_get_default $params use_post_route_phys_opt 1]
 
   # #############################################################################
 
