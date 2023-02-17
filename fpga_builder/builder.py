@@ -187,7 +187,7 @@ def build_default(
                 sys.path.append(THIS_DIR.parents[1] / "manifest_reader")
                 from manifest_reader.vivado_util import generate_filelist
                 generate_filelist(caller_dir(), run_dir, other_files=other_files)
-            build(run_tcl, args, run_dir, tcl_args, vivado_version, and_tar)
+            build(run_tcl, args, run_dir, tcl_args, vivado_version, and_tar, device)
         if do_deploy:
             print(f"Deploying {device}...")
             # Deploy stuff
@@ -213,7 +213,7 @@ def open_vivado_gui(project, vivado_version, run_dir):
     run_cmd(cmd, blocking=False, cwd=run_dir)
 
 
-def build(run_tcl, args, run_dir=None, tcl_args=None, vivado_version=None, and_tar=False):
+def build(run_tcl, args, run_dir=None, tcl_args=None, vivado_version=None, and_tar=False, device_name=None):
     """
     R the build on the selected device
 
@@ -232,7 +232,8 @@ def build(run_tcl, args, run_dir=None, tcl_args=None, vivado_version=None, and_t
         args,
         tcl_args,
         vivado_version,
-        and_tar
+        and_tar,
+        device_name
     )
     stats = get_stats(run_dir, args.num_threads)
     print(stats)
@@ -245,7 +246,8 @@ def run_vivado(
     build_args,
     tcl_args,
     version=None,
-    and_tar=False
+    and_tar=False,
+    device_name=None
 ):
     """
     Runs vivado to run the build of the selected run directory
@@ -272,7 +274,7 @@ def run_vivado(
     vivado_cmd = get_vivado_cmd(version)
     script_path = Path(build_tcl).resolve()
     stats_file = get_stats_file(run_dir, build_args.num_threads)
-    output_dir = stats_file.parent
+    output_dir = run_dir / "output"
     if output_dir.exists():
         if not build_args.force:
             err(f"{output_dir} already exists, provide --force to delete")
@@ -324,8 +326,8 @@ def run_vivado(
         pin_txt = get_changeset_numbers()
         pin_file = output_dir / "pin.txt"
         pin_file.write_text(pin_txt)
-        tar_name = f"{get_app_name()}-ZU{build_args.ultrascale}-{build_args.branch}.j{build_args.job}.{deployer.get_current_commit_hash()[:8]}.tar.xz"
-        build_info_name = f"ZU{build_args.ultrascale}-{build_args.branch}-{build_args.product}FPGA-BuildInfo-j{build_args.job}.txt"
+        branch = deployer.get_current_branch() if not build_args.branch else build_args.branch
+        tar_name = f"{get_app_name()}-{device_name}-{branch}.{deployer.get_current_commit_hash()[:8]}.tar.xz"
         tar_target = output_dir / tar_name
         files = []
         for ext in (".rpt", ".hdf", ".xsa", ".bit", ".log", ".txt"):
@@ -333,36 +335,6 @@ def run_vivado(
         with tarfile.open(tar_target, "w:xz") as tar:
             for file in files:
                 tar.add(file, arcname=file.name)
-        generate_build_info(build_args.ultrascale, tar_name, build_info_name, output_dir)
-
-
-def generate_build_info(ultrascale, tar_file_name, build_info_file_name, output_dir):
-    """
-    Generates build info text file used by auto pinner
-
-    Args:
-        ultrascale: Ultrascale version(4, 5, 7)
-        tar_file_name: name of tar artifact
-        build_info_file_name: name of build info file
-        output_dir: directory where tar is located and build info file will be saved
-
-    """
-    base_artifact = "https://artifactory.deere.com/isg-machine-automation/builds/dev/fpga"
-    ultrascale_name = "" if ultrascale != "5" else f"ZU{ultrascale}"
-
-    buildSystemPin = check_output("git --git-dir BuildSystem/.git rev-parse HEAD")
-    fpgaIpPin = check_output("git --git-dir src/fpga-ip/.git rev-parse HEAD")
-    artifact = os.path.join(base_artifact, tar_file_name)
-    
-    with open(os.path.join(output_dir, build_info_file_name), "w") as file:
-        file.write(f"BuildSystemPin={buildSystemPin}\n" \
-                   f"src/fpga-ip={fpgaIpPin}\n" \
-                   f"Artifact={artifact}\n")
-        with open(os.path.join("BuildSystem", "BspPlatformPin.sh"), "r") as bsp_pin_file:
-            bsp_pin_search = re.compile(f"SocFixedVersion|UtilitiesVersion|soc1{ultrascale_name}Fsbl|soc2{ultrascale_name}Fsbl")
-            for line in bsp_pin_file:
-                if bsp_pin_search.match(line):
-                    file.write(f"{line.strip()}\n")
 
 
 def get_app_name():
@@ -535,24 +507,9 @@ def get_parser(device_names):
 def _add_build_args(parser):
     group = parser.add_argument_group("build", "Build Arguments")
     group.add_argument(
-        "--job",
-        default=999,
-        help="Jenkins job number"
-    )
-    group.add_argument(
         "--branch",
-        default="branch",
+        default=None,
         help="Git branch"
-    )
-    group.add_argument(
-        "--ultrascale",
-        default=4,
-        help="Ultrascale version"
-    )
-    group.add_argument(
-        "--product",
-        help="FPGA product (Stereo or Mono)",
-        choices=["Mono", "Stereo"]
     )
     group.add_argument(
         "-p",

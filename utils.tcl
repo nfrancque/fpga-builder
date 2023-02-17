@@ -498,7 +498,6 @@ proc build_device_from_params {params} {
   set_property -name "steps.post_place_power_opt_design.is_enabled" -value "$use_power_opt" -objects $obj
   set_property -name "steps.post_route_phys_opt_design.is_enabled" -value "$use_post_route_phys_opt" -objects $obj
   set_property -name "steps.post_route_phys_opt_design.args.directive" -value "AggressiveExplore" -objects $obj
-  set_property -name "steps.post_route_phys_opt_design.tcl.post" -value "$origin_dir/BuildSystem/Fpga/timing.tcl" -objects $obj
   set_property "steps.write_bitstream.args.readback_file" "0" $obj
   set_property "steps.write_bitstream.args.verbose" "0" $obj
 
