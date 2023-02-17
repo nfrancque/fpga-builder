@@ -61,7 +61,6 @@ from .utils import (
 )
 from . import deployer
 import os
-import re
 
 THIS_DIR = Path(__file__).parent
 
