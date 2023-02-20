@@ -189,7 +189,7 @@ proc build {proj_name top_name proj_dir} {
       set sysdef ${proj_dir}/${proj_name}.runs/impl_1/${top_name}.sysdef
       write_sysdef -force -hwdef ${hwdef} -bitfile ${bitstream} -file ${sysdef}
 
-      set hdf $output_dir/${top_name}.hdf
+      set hdf $output_dir/system.hdf
       file copy -force ${sysdef} ${hdf}
     } else {
       puts "ERROR: No HDF found! Should be $hwdef"
@@ -371,6 +371,7 @@ proc build_device_from_params {params} {
   set impl_strategy [dict get $params impl_strategy ]
   set origin_dir [dict get $params origin_dir]
   set use_power_opt [dict_get_default $params use_power_opt 1]
+  set use_post_route_phys_opt [dict_get_default $params use_post_route_phys_opt 1]
 
   # #############################################################################
 
@@ -495,6 +496,8 @@ proc build_device_from_params {params} {
   set_property "part" "$part" $obj
   set_property -name "steps.power_opt_design.is_enabled" -value "$use_power_opt" -objects $obj
   set_property -name "steps.post_place_power_opt_design.is_enabled" -value "$use_power_opt" -objects $obj
+  set_property -name "steps.post_route_phys_opt_design.is_enabled" -value "$use_post_route_phys_opt" -objects $obj
+  set_property -name "steps.post_route_phys_opt_design.args.directive" -value "AggressiveExplore" -objects $obj
   set_property "steps.write_bitstream.args.readback_file" "0" $obj
   set_property "steps.write_bitstream.args.verbose" "0" $obj
 

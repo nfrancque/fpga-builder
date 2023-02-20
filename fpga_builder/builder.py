@@ -186,7 +186,7 @@ def build_default(
                 sys.path.append(THIS_DIR.parents[1] / "manifest_reader")
                 from manifest_reader.vivado_util import generate_filelist
                 generate_filelist(caller_dir(), run_dir, other_files=other_files)
-            build(run_tcl, args, run_dir, tcl_args, vivado_version, and_tar)
+            build(run_tcl, args, run_dir, tcl_args, vivado_version, and_tar, device)
         if do_deploy:
             print(f"Deploying {device}...")
             # Deploy stuff
@@ -212,7 +212,7 @@ def open_vivado_gui(project, vivado_version, run_dir):
     run_cmd(cmd, blocking=False, cwd=run_dir)
 
 
-def build(run_tcl, args, run_dir=None, tcl_args=None, vivado_version=None, and_tar=False):
+def build(run_tcl, args, run_dir=None, tcl_args=None, vivado_version=None, and_tar=False, device_name=None):
     """
     R the build on the selected device
 
@@ -228,14 +228,11 @@ def build(run_tcl, args, run_dir=None, tcl_args=None, vivado_version=None, and_t
     run_vivado(
         run_tcl,
         run_dir,
-        args.num_threads,
-        args.bd_only,
-        args.synth_only,
-        args.impl_only,
-        args.force,
+        args,
         tcl_args,
         vivado_version,
-        and_tar
+        and_tar,
+        device_name
     )
     stats = get_stats(run_dir, args.num_threads)
     print(stats)
@@ -245,14 +242,11 @@ def build(run_tcl, args, run_dir=None, tcl_args=None, vivado_version=None, and_t
 def run_vivado(
     build_tcl,
     run_dir,
-    num_threads,
-    bd_only,
-    synth_only,
-    impl_only,
-    force,
+    build_args,
     tcl_args,
     version=None,
-    and_tar=False
+    and_tar=False,
+    device_name=None
 ):
     """
     Runs vivado to run the build of the selected run directory
@@ -278,24 +272,24 @@ def run_vivado(
         version = "2019.1"
     vivado_cmd = get_vivado_cmd(version)
     script_path = Path(build_tcl).resolve()
-    stats_file = get_stats_file(run_dir, num_threads)
-    output_dir = stats_file.parent
+    stats_file = get_stats_file(run_dir, build_args.num_threads)
+    output_dir = run_dir / "output"
     if output_dir.exists():
-        if not force:
+        if not build_args.force:
             err(f"{output_dir} already exists, provide --force to delete")
             exit(1)
         shutil.rmtree(output_dir)
     output_dir.mkdir(parents=True)
     log = output_dir / "vivado.log"
     stats_file = str(stats_file.as_posix())
-    bd_only_arg = 1 if bd_only else 0
-    synth_only_arg = 1 if synth_only else 0
-    impl_only_arg = 1 if impl_only else 0
-    force_arg = 1 if force else 0
+    bd_only_arg = 1 if build_args.bd_only else 0
+    synth_only_arg = 1 if build_args.synth_only else 0
+    impl_only_arg = 1 if build_args.impl_only else 0
+    force_arg = 1 if build_args.force else 0
     use_vitis_arg = check_vitis(version)
     default_args = [
         stats_file,
-        num_threads,
+        build_args.num_threads,
         bd_only_arg,
         synth_only_arg,
         impl_only_arg,
@@ -331,8 +325,9 @@ def run_vivado(
         pin_txt = get_changeset_numbers()
         pin_file = output_dir / "pin.txt"
         pin_file.write_text(pin_txt)
-        filename = f"{get_app_name()}-{deployer.get_current_branch()}-{deployer.get_current_commit_hash()}.tar.xz"
-        tar_target = output_dir / filename
+        branch = deployer.get_current_branch() if build_args.branch is None else build_args.branch
+        tar_name = f"{get_app_name()}-{device_name}-{branch}.{deployer.get_current_commit_hash()[:8]}.tar.xz"
+        tar_target = output_dir / tar_name
         files = []
         for ext in (".rpt", ".hdf", ".xsa", ".bit", ".log", ".txt"):
             files.extend(list(output_dir.glob(f"*{ext}")))
@@ -342,8 +337,9 @@ def run_vivado(
 
 
 def get_app_name():
-    app_name = Path(deployer.get_remote_url()).stem
+    app_name = Path(deployer.get_remote_url()).stem.replace(".git", "")
     return app_name
+
 
 def get_submodule_commits():
     raw_output = check_output("git submodule status --recursive")
@@ -509,6 +505,11 @@ def get_parser(device_names):
 
 def _add_build_args(parser):
     group = parser.add_argument_group("build", "Build Arguments")
+    group.add_argument(
+        "--branch",
+        default=None,
+        help="Git branch"
+    )
     group.add_argument(
         "-p",
         "--num-threads",
