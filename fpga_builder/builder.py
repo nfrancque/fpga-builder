@@ -325,7 +325,7 @@ def run_vivado(
         pin_txt = get_changeset_numbers()
         pin_file = output_dir / "pin.txt"
         pin_file.write_text(pin_txt)
-        branch = deployer.get_current_branch() if not build_args.branch else build_args.branch
+        branch = deployer.get_current_branch() if build_args.branch is None else build_args.branch
         tar_name = f"{get_app_name()}-{device_name}-{branch}.{deployer.get_current_commit_hash()[:8]}.tar.xz"
         tar_target = output_dir / tar_name
         files = []
