@@ -176,25 +176,25 @@ proc build {proj_name top_name proj_dir} {
   set bitstream ${proj_dir}/${proj_name}.runs/impl_1/${top_name}.bit
   global use_vitis
   if {[file exists $bitstream]} {
+    file copy -force $bitstream $output_dir/
     if { $use_vitis == 1 } {
       set xsa $output_dir/${top_name}.xsa
       write_hw_platform -fixed -include_bit -force -file $xsa
     } else {
-    file copy -force $bitstream $output_dir/
-    set hwdef ${proj_dir}/${proj_name}.runs/impl_1/${top_name}.hwdef
+      set hwdef ${proj_dir}/${proj_name}.runs/impl_1/${top_name}.hwdef
 
-    if {[file exists $hwdef]} {
-      write_hwdef -force -file $hwdef
-      
-      set sysdef ${proj_dir}/${proj_name}.runs/impl_1/${top_name}.sysdef
-      write_sysdef -force -hwdef ${hwdef} -bitfile ${bitstream} -file ${sysdef}
+      if {[file exists $hwdef]} {
+        write_hwdef -force -file $hwdef
+        
+        set sysdef ${proj_dir}/${proj_name}.runs/impl_1/${top_name}.sysdef
+        write_sysdef -force -hwdef ${hwdef} -bitfile ${bitstream} -file ${sysdef}
 
-      set hdf $output_dir/system.hdf
-      file copy -force ${sysdef} ${hdf}
-    } else {
-      puts "ERROR: No HDF found! Should be $hwdef"
-      exit 1
-    }
+        set hdf $output_dir/system.hdf
+        file copy -force ${sysdef} ${hdf}
+      } else {
+        puts "ERROR: No HDF found! Should be $hwdef"
+        exit 1
+      }
     }
 
   } else {
