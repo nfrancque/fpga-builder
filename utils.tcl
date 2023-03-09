@@ -103,7 +103,6 @@ proc build {proj_name top_name proj_dir} {
   launch_runs -jobs $max_threads -verbose synth_1
   wait_on_run synth_1
   if {[get_property PROGRESS [get_runs synth_1]] != "100%"} {
-    error "ERROR: Synthesis failed"
     set failed_runs [get_runs -filter {IS_SYNTHESIS && PROGRESS < 100}]
     set runs_dir ${proj_dir}/${proj_name}.runs/
     foreach run $failed_runs {
@@ -118,6 +117,7 @@ proc build {proj_name top_name proj_dir} {
       }
     }
 
+    error "ERROR: Synthesis failed"
     exit 1
   }
   set synth_time [expr [clock seconds] - $start]
