@@ -104,6 +104,20 @@ proc build {proj_name top_name proj_dir} {
   wait_on_run synth_1
   if {[get_property PROGRESS [get_runs synth_1]] != "100%"} {
     error "ERROR: Synthesis failed"
+    set failed_runs [get_runs -filter {IS_SYNTHESIS && PROGRESS < 100}]
+    set runs_dir ${proj_dir}/${proj_name}.runs/
+    foreach run $failed_runs {
+      set log_dir ${runs_dir}/${run}
+      set log ${log_dir}/runme.log
+      if {[file exists $log]} {
+        puts "========== START LOG FOR ${run} =========="
+        puts [read [open ${log} r]]
+        puts "========== END LOG FOR ${run} =========="
+      } else {
+        puts "NO LOG FOR ${run}"
+      }
+    }
+
     exit 1
   }
   set synth_time [expr [clock seconds] - $start]
