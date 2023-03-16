@@ -28,15 +28,16 @@
 
 # Set up builtin args
 # They're in the back so user can use front if needed
-set num_builtin_args 7
+set num_builtin_args 8
 set builtin_args_start_idx [expr $argc - $num_builtin_args]
-set stats_idx [expr $builtin_args_start_idx + 0]
-set threads_idx [expr $builtin_args_start_idx + 1]
-set bd_only_idx [expr $builtin_args_start_idx + 2]
-set synth_only_idx [expr $builtin_args_start_idx + 3]
-set impl_only_idx [expr $builtin_args_start_idx + 4]
-set force_idx [expr $builtin_args_start_idx + 5]
-set use_vitis_idx [expr $builtin_args_start_idx + 6]
+set unused_idx [expr $builtin_args_start_idx + 0]
+set stats_idx [expr $builtin_args_start_idx + 1]
+set threads_idx [expr $builtin_args_start_idx + 2]
+set bd_only_idx [expr $builtin_args_start_idx + 3]
+set synth_only_idx [expr $builtin_args_start_idx + 4]
+set impl_only_idx [expr $builtin_args_start_idx + 5]
+set force_idx [expr $builtin_args_start_idx + 6]
+set use_vitis_idx [expr $builtin_args_start_idx + 7]
 
 set stats_file [lindex $argv $stats_idx]
 set max_threads [lindex $argv $threads_idx]

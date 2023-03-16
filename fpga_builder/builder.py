@@ -34,6 +34,9 @@ General script for building FPGA designs
 
 """
 
+import manifest_reader
+from manifest_reader.vivado_util import generate_filelist
+
 import subprocess
 import argparse
 from pathlib import Path
@@ -287,7 +290,9 @@ def run_vivado(
     impl_only_arg = 1 if build_args.impl_only else 0
     force_arg = 1 if build_args.force else 0
     use_vitis_arg = check_vitis(version)
+    tcl_utils = THIS_DIR / "../utils.tcl"
     default_args = [
+        tcl_utils,
         stats_file,
         build_args.num_threads,
         bd_only_arg,
@@ -321,7 +326,8 @@ def run_vivado(
             info(line)
 
     run_cmd(cmd_string, cwd=run_dir, line_handler=line_handler)
-    if and_tar:
+    any_only = build_args.bd_only or build_args.synth_only or build_args.impl_only
+    if and_tar and not any_only:
         pin_txt = get_changeset_numbers()
         pin_file = output_dir / "pin.txt"
         pin_file.write_text(pin_txt)
@@ -596,8 +602,7 @@ def build_block(
         None
 
     """
-    sys.path.append(THIS_DIR.parents[1] / "manifest_reader")
-    from manifest_reader.vivado_util import generate_filelist
+    # sys.path.append(THIS_DIR.parents[1] / "manifest_reader")
 
     if device is None:
         device = ZYNQ_7020_2
