@@ -34,8 +34,8 @@ General script for building FPGA designs
 
 """
 
-import manifest_reader
 from manifest_reader.vivado_util import generate_filelist
+
 
 import subprocess
 import argparse
@@ -184,10 +184,8 @@ def build_default(
                 vivado_version = vivado_versions[device]
             else:
                 vivado_version = None
-            if other_files:
+            if other_files or (caller_dir() / "blocks.yaml").exists():
                 # Workaround so doesn't always have to be next to it
-                sys.path.append(THIS_DIR.parents[1] / "manifest_reader")
-                from manifest_reader.vivado_util import generate_filelist
                 generate_filelist(caller_dir(), run_dir, other_files=other_files)
             build(run_tcl, args, run_dir, tcl_args, vivado_version, and_tar, device)
         if do_deploy:
@@ -602,7 +600,6 @@ def build_block(
         None
 
     """
-    # sys.path.append(THIS_DIR.parents[1] / "manifest_reader")
 
     if device is None:
         device = ZYNQ_7020_2
