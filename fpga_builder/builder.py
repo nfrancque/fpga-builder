@@ -187,6 +187,7 @@ def build_default(
             if other_files or (caller_dir() / "blocks.yaml").exists():
                 # Workaround so doesn't always have to be next to it
                 generate_filelist(caller_dir(), run_dir, other_files=other_files)
+            
             build(run_tcl, args, run_dir, tcl_args, vivado_version, and_tar, device)
         if do_deploy:
             print(f"Deploying {device}...")
@@ -288,7 +289,7 @@ def run_vivado(
     impl_only_arg = 1 if build_args.impl_only else 0
     force_arg = 1 if build_args.force else 0
     use_vitis_arg = check_vitis(version)
-    tcl_utils = THIS_DIR / "../utils.tcl"
+    tcl_utils = THIS_DIR / "utils.tcl"
     default_args = [
         tcl_utils,
         stats_file,

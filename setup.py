@@ -28,6 +28,8 @@ def read_requirements(path):
         if not line.startswith(('"', "#", "-", "git+"))
     ]
 
+packages = find_packages(exclude=["tests", ".github"])
+print(packages)
 
 setup(
     name="fpga_builder",
@@ -37,10 +39,12 @@ setup(
     long_description=read("README.md"),
     long_description_content_type="text/markdown",
     author="author_name",
-    packages=find_packages(exclude=["tests", ".github"]),
+    packages=packages,
     install_requires=read_requirements("requirements.txt"),
     entry_points={
         "console_scripts": ["project_name = project_name.__main__:main"]
     },
+    package_data={"fpga_builder": ["utils.tcl"]},
+    include_package_data=True
     # extras_require={"test": read_requirements("requirements-test.txt")},
 )
