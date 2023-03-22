@@ -334,7 +334,7 @@ def run_vivado(
         tar_name = f"{get_app_name()}-{device_name}-{branch}.{deployer.get_current_commit_hash()[:8]}.tar.xz"
         tar_target = output_dir / tar_name
         files = []
-        for ext in (".rpt", ".hdf", ".xsa", ".bit", ".log", ".txt"):
+        for ext in (".rpt", ".hdf", ".xsa", ".bit", ".log", ".txt", ".ltx"):
             files.extend(list(output_dir.glob(f"*{ext}")))
         with tarfile.open(tar_target, "w:xz") as tar:
             for file in files:
