@@ -82,6 +82,7 @@ proc build {proj_name top_name proj_dir} {
   global bitstream_time
   global stats_file
   global max_threads
+  global usr_access
 
   set output_dir [file normalize $proj_dir/../output]
 
