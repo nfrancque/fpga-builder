@@ -91,6 +91,7 @@ def build_default(
     vivado_versions=None,
     other_files=None,
     and_tar=False,
+    design_versions=None
 ):
     """
     Parses arguments and runs the build on the selected device
@@ -184,12 +185,13 @@ def build_default(
                 vivado_version = vivado_versions[device]
             else:
                 vivado_version = None
+            usr_access = get_usr_access(args, design_versions, device)
             if other_files or (caller_dir() / "blocks.yaml").exists():
                 # Workaround so doesn't always have to be next to it
                 print("Doing a filelist", other_files, caller_dir())
                 generate_filelist(caller_dir(), run_dir, other_files=other_files)
             
-            build(run_tcl, args, run_dir, tcl_args, vivado_version, and_tar, device)
+            build(run_tcl, args, run_dir, tcl_args, vivado_version, and_tar, device, usr_access=usr_access)
         if do_deploy:
             print(f"Deploying {device}...")
             # Deploy stuff
@@ -215,7 +217,7 @@ def open_vivado_gui(project, vivado_version, run_dir):
     run_cmd(cmd, blocking=False, cwd=run_dir)
 
 
-def build(run_tcl, args, run_dir=None, tcl_args=None, vivado_version=None, and_tar=False, device_name=None):
+def build(run_tcl, args, run_dir=None, tcl_args=None, vivado_version=None, and_tar=False, device_name=None, usr_access=0):
     """
     R the build on the selected device
 
@@ -235,11 +237,55 @@ def build(run_tcl, args, run_dir=None, tcl_args=None, vivado_version=None, and_t
         tcl_args,
         vivado_version,
         and_tar,
-        device_name
+        device_name,
+        usr_access,
     )
     stats = get_stats(run_dir, args.num_threads)
     print(stats)
     success("Done!")
+
+def set_bits(input, which_bits, val):
+    if type(which_bits) is not tuple:
+        # Tuplify bits
+        which_bits = (which_bits, which_bits)
+    high, low = which_bits
+    range_len = high - low + 1
+    range_max = 2**range_len-1
+    if val > range_max:
+        raise Exception(f"{val} is greater than {range_max}")
+    for i in range(low, high):
+        # Clear bits associated with this field
+        input &= ~(1 << i)
+    # Add in our new value
+    input |= val << low
+    return input
+
+def get_usr_access(args, design_versions, device):
+    PATCH_RANGE = (7, 0)
+    MINOR_RANGE = (15, 8)
+    MAJOR_RANGE = (23, 16)
+    GOLDEN_IDX = 24
+    RELEASE_IDX = 25
+    RESERVED_RANGE = (31, 26)
+
+
+    if design_versions:
+        design_version = design_versions[device]
+    else:
+        design_version = "0.0.0"
+    print(design_version)
+    major, minor, patch = [int(field) for field in design_version.split(".")]
+    is_golden = 1 if args.golden else 0
+    is_release = 1 if args.release else 0
+    usr_access = 0
+    usr_access = set_bits(usr_access, PATCH_RANGE, patch)
+    usr_access = set_bits(usr_access, MINOR_RANGE, minor)
+    usr_access = set_bits(usr_access, MAJOR_RANGE, major)
+    usr_access = set_bits(usr_access, GOLDEN_IDX, is_golden)
+    usr_access = set_bits(usr_access, RELEASE_IDX, is_release)
+    usr_access = set_bits(usr_access, RESERVED_RANGE, 0)
+    return usr_access
+
 
 
 def run_vivado(
@@ -249,7 +295,8 @@ def run_vivado(
     tcl_args,
     version=None,
     and_tar=False,
-    device_name=None
+    device_name=None,
+    usr_access=0,
 ):
     """
     Runs vivado to run the build of the selected run directory
@@ -300,6 +347,7 @@ def run_vivado(
         impl_only_arg,
         force_arg,
         use_vitis_arg,
+        usr_access,
     ]
     default_args = [str(arg) for arg in default_args]
     args = []
@@ -332,6 +380,8 @@ def run_vivado(
         pin_file = output_dir / "pin.txt"
         pin_file.write_text(pin_txt)
         branch = deployer.get_current_branch() if build_args.branch is None else build_args.branch
+        # Sad path noises
+        branch = branch.replace("/", "|")
         tar_name = f"{get_app_name()}-{device_name}-{branch}.{deployer.get_current_commit_hash()[:8]}.tar.xz"
         tar_target = output_dir / tar_name
         files = []
@@ -552,6 +602,18 @@ def _add_build_args(parser):
         default=False,
         action="store_true",
         help="Just open the vivado project in the gui",
+    )
+    group.add_argument(
+        "--golden",
+        default=False,
+        action="store_true",
+        help="Indicate this will be a golden build for bootloader fallback",
+    )
+    group.add_argument(
+        "--release",
+        default=False,
+        action="store_true",
+        help="Indicate this will be a release build",
     )
     return parser
 

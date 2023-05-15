@@ -28,7 +28,7 @@
 
 # Set up builtin args
 # They're in the back so user can use front if needed
-set num_builtin_args 8
+set num_builtin_args 9
 set builtin_args_start_idx [expr $argc - $num_builtin_args]
 set unused_idx [expr $builtin_args_start_idx + 0]
 set stats_idx [expr $builtin_args_start_idx + 1]
@@ -38,6 +38,7 @@ set synth_only_idx [expr $builtin_args_start_idx + 4]
 set impl_only_idx [expr $builtin_args_start_idx + 5]
 set force_idx [expr $builtin_args_start_idx + 6]
 set use_vitis_idx [expr $builtin_args_start_idx + 7]
+set usr_access_idx [expr $builtin_args_start_idx + 8]
 
 set stats_file [lindex $argv $stats_idx]
 set max_threads [lindex $argv $threads_idx]
@@ -46,6 +47,8 @@ set synth_only [lindex $argv $synth_only_idx]
 set impl_only [lindex $argv $impl_only_idx]
 set force [lindex $argv $force_idx]
 set use_vitis [lindex $argv $use_vitis_idx]
+set usr_access [lindex $argv $usr_access_idx]
+
 
 puts "stats_file: $stats_file"
 puts "max_threads: $max_threads"
@@ -161,11 +164,17 @@ proc build {proj_name top_name proj_dir} {
   set power_line_split [split $power_line "|"]
   global total_power
   set total_power [string trim [lindex $power_line_split 2]]
+
+  # Set access bits 
+  set_property BITSTREAM.CONFIG.USR_ACCESS $usr_access [current_design]
+  set_property BITSTREAM.CONFIG.USERID     $usr_access [current_design]
+
   set report_time [expr [clock seconds] - $start]
   
   exit_if_impl_only
   # Bitstream
   set start [clock seconds]
+
   launch_runs impl_1 -to_step write_bitstream -jobs $max_threads
   wait_on_run impl_1
   set bitstream_time [expr [clock seconds] - $start]
