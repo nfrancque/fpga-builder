@@ -31,11 +31,16 @@ set this_dir [ file dirname [ file normalize [ info script ] ] ]
 set filelist [lindex $argv 0]
 set build_dir [lindex $argv 1]
 set device [lindex $argv 2]
-set num_generics [lindex $argv 3]
+set board [lindex $argv 3]
+set bd_file [lindex $argv 4]
+set top [lindex $argv 5]
+set ip_repo [lindex $argv 6]
+set num_generics [lindex $argv 7]
+set generic_base_idx 8
 # Set up generics dict
 set generics [dict create]
 for {set i 0} {$i < $num_generics*2} {incr i 2} {
-    set key_idx [expr 4 + $i]
+    set key_idx [expr $generic_base_idx + $i]
     set value_idx [expr $key_idx + 1]
     set k [lindex $argv $key_idx]
     set v [lindex $argv $value_idx]
@@ -44,4 +49,4 @@ for {set i 0} {$i < $num_generics*2} {incr i 2} {
 puts $generics
 # Build the thing
 source $this_dir/utils.tcl
-build_block $filelist $build_dir $device $generics
+build_block $filelist $build_dir $device $generics $board $bd_file $top $ip_repo

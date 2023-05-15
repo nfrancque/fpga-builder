@@ -249,15 +249,49 @@ proc report_stats {} {
   close $stats_chan
 }
 
-proc build_device {proj_name top proj_dir} {
-  exit_if_bd_only
+proc build_device {proj_name top proj_dir bd_files make_wrapper} {
+  source_bd_files $bd_files $top $make_wrapper
   build $proj_name $top $proj_dir
 }
 
-proc build_block { filelist build_dir device generics} {
+proc source_bd_files {bd_files top make_wrapper} {
+  # #############################################################################
+  # Block design files
+  # #############################################################################
+
+  # Create block design
+
+  foreach {bd_file} $bd_files {
+    puts "File is $bd_file"
+    set ret [source $bd_file]
+    if {${ret} != "" } {
+      exit ${ret}
+    }
+
+  }
+
+  # Generate the wrapper
+  if {$make_wrapper == 1} {
+    make_wrapper -files [get_files $top.bd] -top -import
+  }
+
+  set_property "top" $top [get_filesets sources_1]
+
+  # Update the compile order
+  update_compile_order -fileset sources_1
+  update_compile_order -fileset sim_1
+  exit_if_bd_only
+
+}
+
+proc build_block { filelist build_dir device generics {board 0} {bd_file 0} {top 0} {ip_repo 0}} {
   set proj_name "proj"
   # User must call their top level wrapper entity top
-  set top_name "top"
+  if {$top != 0} {
+    set top_name $top
+  } else {
+    set top_name "top"
+  }
   set part $device
   set proj_dir $build_dir/$proj_name
   clean_proj_if_needed $proj_dir
@@ -269,6 +303,19 @@ proc build_block { filelist build_dir device generics} {
     file delete -force $proj_dir
   }
   create_project -force $proj_name $proj_dir -part $part
+
+  if {$board != 0} {
+    set_property BOARD_PART $board [current_project]
+  }
+
+  if {$ip_repo != 0} {
+    set_ip_repos $ip_repo
+  }
+
+  if {$bd_file != 0} {
+    source_bd_files [list $bd_file] $top_name 1
+  }
+
   configure_warnings_and_errors
   
   # Add files
@@ -334,6 +381,7 @@ proc exit_if_synth_only {} {
 }
 
 proc add_files_from_filelist {filelist} {
+  puts "Adding files from ${filelist}"
   source $filelist
   foreach {path lib standard} $all_sources {
     add_files $path
@@ -358,21 +406,48 @@ proc dict_get_default {dict param default} {
   return $value
 }
 
+proc set_ip_repos {repos} {
+  # #############################################################################
+  # IP files
+  # #############################################################################
+  # Set IP repository paths
+  set repos_string [join $repos " "]
+  puts "repos_string is $repos_string"
+  set_property "ip_repo_paths" "$repos_string" [current_fileset]
+
+  # Rebuild user ip_repo's index before adding any source files
+  update_ip_catalog -rebuild
+}
+
 proc build_device_from_params {params} {
   # Grab things from the dict
   set proj_name [dict get $params proj_name ]
   set vivado_year [dict get $params vivado_year ]
   set part [dict get $params part ]
   set top [dict get $params top ]
-  set ip_repo [dict get $params ip_repo ]
+  if {[dict exists $params ip_repos]} {
+    set ip_repos [dict get $params ip_repos ]
+  } elseif {[dict exists $params ip_repo]} {
+    set ip_repos [ list \
+      [dict get $params ip_repo ] \
+    ]
+  }
   set hdl_files [dict_get_default $params hdl_files ""]
   set constraints_files [dict_get_default $params constraints_files ""]
-  set bd_file [dict get $params bd_file ]
+  if {[dict exists $params bd_files]} {
+    set bd_files [dict get $params bd_files ]
+  } elseif {[dict exists $params bd_file]} {
+    set bd_files [ list \
+      [dict get $params bd_file ] \
+    ]
+  }
   set synth_strategy [dict get $params synth_strategy ]
   set impl_strategy [dict get $params impl_strategy ]
   set origin_dir [dict get $params origin_dir]
   set use_power_opt [dict_get_default $params use_power_opt 1]
   set use_post_route_phys_opt [dict_get_default $params use_post_route_phys_opt 1]
+  set make_wrapper [dict_get_default $params make_wrapper 0]
+  set target_language [dict_get_default $params target_language VHDL]
 
   # #############################################################################
 
@@ -396,7 +471,7 @@ proc build_device_from_params {params} {
   set_property "sim.ip.auto_export_scripts" "1" $obj
   set_property -name "ip_interface_inference_priority" -value "" -objects $obj
   set_property "simulator_language" "Mixed" $obj
-  set_property "target_language" "VHDL" $obj
+  set_property "target_language" "$target_language" $obj
   set_property -name "enable_vhdl_2008" -value "1" -objects $obj
   set_property -name "xpm_libraries" -value "XPM_CDC XPM_FIFO XPM_MEMORY" -objects $obj
 
@@ -422,15 +497,7 @@ proc build_device_from_params {params} {
     puts "No filelist provided"
   }
 
-  # #############################################################################
-  # IP files
-  # #############################################################################
-  # Set IP repository paths
-  set ip_repo_paths "[file normalize "$origin_dir$ip_repo"]"
-  set_property "ip_repo_paths" "$ip_repo_paths"  [current_fileset]
-
-  # Rebuild user ip_repo's index before adding any source files
-  update_ip_catalog -rebuild
+  set_ip_repos $ip_repos
 
   #upgrade_ip [get_ips]
 
@@ -505,33 +572,7 @@ proc build_device_from_params {params} {
   # set the current impl run
   current_run -implementation [get_runs impl_1]
 
-  # #############################################################################
-  # Block design files
-  # #############################################################################
-
-  # Create block design
-  set ret [source $bd_file]
-  if {${ret} != "" } {
-    exit ${ret}
-  }
-
-  # Generate the wrapper
-  set design_name [get_bd_designs]
-  make_wrapper -files [get_files $design_name.bd] -top -import
-
-  # Set the top level after make_wrapper so it exists to set as top if needed
-  set_property "top" $top [get_filesets sources_1]
-  update_compile_order -fileset sources_1
-
-  save_bd_design
-  validate_bd_design
-
-  # Update the compile order
-  update_compile_order -fileset sources_1
-  update_compile_order -fileset sim_1
-
-  puts "INFO: Project created:$proj_name"
-  build_device $proj_name $top $proj_dir
+  build_device $proj_name $top $proj_dir $bd_files $make_wrapper
 }
 
 proc grep { {a} {fs {*}} } {
@@ -591,4 +632,9 @@ proc configure_warnings_and_errors {} {
   puts "INFO: Setting severities"
   # Force error if parameter name not found on IP core.  Found on IP upgrade with generic name changes
   set_msg_config -id {BD 41-1276} -new_severity {ERROR}
+  # Reclassify assertion warnings to info messages.  These are from the Xilinx IP, and assertions are not used
+  set_msg_config -id {[Synth 8-312]} -new_severity INFO
+
+  # Reclassify 8-3332 as an info message.  These are primarily created by the synthesis tool
+  set_msg_config -id {[Synth 8-3332]} -new_severity INFO
 }

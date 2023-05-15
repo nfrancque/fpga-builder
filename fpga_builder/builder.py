@@ -69,7 +69,7 @@ THIS_DIR = Path(__file__).parent
 
 BASE_DIR = Path(environ.get("BASE_DIR", ".")).resolve()
 
-BUILD_BLK_TCL_SCRIPT = FILE_DIR / "../build_block.tcl"
+BUILD_BLK_TCL_SCRIPT = FILE_DIR / "build_block.tcl"
 
 BUILD_COMMANDS = ["build", "build-deploy"]
 DEPLOY_COMMANDS = ["deploy", "build-deploy"]
@@ -186,6 +186,7 @@ def build_default(
                 vivado_version = None
             if other_files or (caller_dir() / "blocks.yaml").exists():
                 # Workaround so doesn't always have to be next to it
+                print("Doing a filelist", other_files, caller_dir())
                 generate_filelist(caller_dir(), run_dir, other_files=other_files)
             
             build(run_tcl, args, run_dir, tcl_args, vivado_version, and_tar, device)
@@ -583,7 +584,8 @@ def get_other_files(from_dir, already_have=None, recursive=True, files_93=None):
 
 
 def build_block(
-    blk_dir, top_level=None, constraints=None, other_files=None, device=None, generics=None, vivado_version=None
+    blk_dir, top_level=None, constraints=None, other_files=None, device=None, generics=None, vivado_version=None,
+    board=None, bd_file=None, top=None, ip_repo=None
 ):
     """
     Runs a build for a block with a manifest
@@ -632,6 +634,10 @@ def build_block(
         build_dir / "filelist.tcl",
         build_dir,
         device,
+        board if board is not None else 0,
+        bd_file if bd_file is not None else 0,
+        top if top is not None else 0,
+        ip_repo if ip_repo is not None else 0,
         num_generics,
         *generics_pairs,
     ]
