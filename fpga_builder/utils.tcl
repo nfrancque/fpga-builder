@@ -83,6 +83,7 @@ proc build {proj_name top_name proj_dir} {
   global stats_file
   global max_threads
   global usr_access
+  global power_threshold
 
   set output_dir [file normalize $proj_dir/../output]
 
@@ -104,6 +105,20 @@ proc build {proj_name top_name proj_dir} {
   launch_runs -jobs $max_threads -verbose synth_1
   wait_on_run synth_1
   if {[get_property PROGRESS [get_runs synth_1]] != "100%"} {
+    set failed_runs [get_runs -filter {IS_SYNTHESIS && PROGRESS < 100}]
+    set runs_dir ${proj_dir}/${proj_name}.runs/
+    foreach run $failed_runs {
+      set log_dir ${runs_dir}/${run}
+      set log ${log_dir}/runme.log
+      if {[file exists $log]} {
+        puts "========== START LOG FOR ${run} =========="
+        puts [read [open ${log} r]]
+        puts "========== END LOG FOR ${run} =========="
+      } else {
+        puts "NO LOG FOR ${run}"
+      }
+    }
+
     error "ERROR: Synthesis failed"
     exit 1
   }
@@ -138,7 +153,7 @@ proc build {proj_name top_name proj_dir} {
   # Utilization
   set util_rpt [file normalize "$stats_file/../utilization.rpt"]
   report_utilization -file $util_rpt
-  set lut_line [lindex [grep "Slice LUTs" $util_rpt] 0]
+  set lut_line [lindex [grep "CLB LUTs" $util_rpt] 0]
   set lut_line_split [split $lut_line "|"]
   global lut_util
   set lut_util [string trim [lindex $lut_line_split 5]]
@@ -165,6 +180,12 @@ proc build {proj_name top_name proj_dir} {
   set power_line_split [split $power_line "|"]
   global total_power
   set total_power [string trim [lindex $power_line_split 2]]
+  if { $power_threshold && $total_power > $power_threshold} {
+    puts "ERROR: Total power ($total_power W) exceeds threshold ($power_threshold W)!"
+    exit 1
+  } else {
+    puts "Total power is $total_power W"
+  }
 
   # Set access bits 
   set_property BITSTREAM.CONFIG.USR_ACCESS $usr_access [current_design]
@@ -430,6 +451,8 @@ proc set_ip_repos {repos} {
 }
 
 proc build_device_from_params {params} {
+  global power_threshold
+
   # Grab things from the dict
   set proj_name [dict get $params proj_name ]
   set vivado_year [dict get $params vivado_year ]
@@ -458,6 +481,7 @@ proc build_device_from_params {params} {
   set use_post_route_phys_opt [dict_get_default $params use_post_route_phys_opt 1]
   set make_wrapper [dict_get_default $params make_wrapper 0]
   set target_language [dict_get_default $params target_language VHDL]
+  set power_threshold [dict_get_default $params power_threshold 0]  
 
   # #############################################################################
 
