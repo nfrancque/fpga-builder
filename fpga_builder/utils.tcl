@@ -70,7 +70,7 @@ set lut_util 0
 set ram_util 0
 set total_power 0
 
-proc build {proj_name top_name proj_dir} {
+proc build {proj_name top_name proj_dir {allow_timing_fail 0}} {
   global synth_time
   global total_start
   global impl_time
@@ -146,7 +146,12 @@ proc build {proj_name top_name proj_dir} {
   set timing_pass [expr {$worst_slack >= 0}]
   if {$timing_pass == 0} {
     puts "ERROR: Failed to meet timing! Worst path slack was $worst_slack"
-    exit 1
+    if {$allow_timing_fail == 0}
+    {
+      exit 1
+    } else {
+      puts "CRITICAL WARNING: Requested to continue on timing failure, continuing anyways.  USE WITH CAUTION"
+    }
   } else {
     puts "Timing met with $worst_slack ns of slack"
   }
@@ -280,9 +285,9 @@ proc report_stats {} {
   close $stats_chan
 }
 
-proc build_device {proj_name top proj_dir bd_files make_wrapper} {
+proc build_device {proj_name top proj_dir bd_files make_wrapper {allow_timing_fail 0}} {
   source_bd_files $bd_files $top $make_wrapper
-  build $proj_name $top $proj_dir
+  build $proj_name $top $proj_dir $allow_timing_fail
 }
 
 proc source_bd_files {bd_files top make_wrapper} {
@@ -481,7 +486,8 @@ proc build_device_from_params {params} {
   set use_post_route_phys_opt [dict_get_default $params use_post_route_phys_opt 1]
   set make_wrapper [dict_get_default $params make_wrapper 0]
   set target_language [dict_get_default $params target_language VHDL]
-  set power_threshold [dict_get_default $params power_threshold 0]  
+  set power_threshold [dict_get_default $params power_threshold 0]
+  set allow_timing_fail [dict_get_default $params allow_timing_fail 0]  
 
   # #############################################################################
 
@@ -606,7 +612,7 @@ proc build_device_from_params {params} {
   # set the current impl run
   current_run -implementation [get_runs impl_1]
 
-  build_device $proj_name $top $proj_dir $bd_files $make_wrapper
+  build_device $proj_name $top $proj_dir $bd_files $make_wrapper $allow_timing_fail
 }
 
 proc grep { {a} {fs {*}} } {
