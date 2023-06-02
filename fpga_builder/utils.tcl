@@ -280,12 +280,12 @@ proc report_stats {} {
   close $stats_chan
 }
 
-proc build_device {proj_name top proj_dir bd_files make_wrapper} {
-  source_bd_files $bd_files $top $make_wrapper
+proc build_device {proj_name top proj_dir bd_files design_name_internal make_wrapper} {
+  source_bd_files $bd_files $top $design_name_internal $make_wrapper
   build $proj_name $top $proj_dir
 }
 
-proc source_bd_files {bd_files top make_wrapper} {
+proc source_bd_files {bd_files top design_name_internal make_wrapper} {
   # #############################################################################
   # Block design files
   # #############################################################################
@@ -303,7 +303,7 @@ proc source_bd_files {bd_files top make_wrapper} {
 
   # Generate the wrapper
   if {$make_wrapper == 1} {
-    make_wrapper -files [get_files $top.bd] -top -import
+    make_wrapper -files [get_files $design_name_internal.bd] -top -import
   }
 
   set_property "top" $top [get_filesets sources_1]
@@ -344,7 +344,7 @@ proc build_block { filelist build_dir device generics {board 0} {bd_file 0} {top
   }
 
   if {$bd_file != 0} {
-    source_bd_files [list $bd_file] $top_name 1
+    source_bd_files [list $bd_file] $top_name $top_name 1
   }
 
   configure_warnings_and_errors
@@ -482,6 +482,7 @@ proc build_device_from_params {params} {
   set make_wrapper [dict_get_default $params make_wrapper 0]
   set target_language [dict_get_default $params target_language VHDL]
   set power_threshold [dict_get_default $params power_threshold 0]  
+  set design_name_internal [dict_get_default $params design_name $top]
 
   # #############################################################################
 
@@ -606,7 +607,7 @@ proc build_device_from_params {params} {
   # set the current impl run
   current_run -implementation [get_runs impl_1]
 
-  build_device $proj_name $top $proj_dir $bd_files $make_wrapper
+  build_device $proj_name $top $proj_dir $bd_files $design_name_internal $make_wrapper
 }
 
 proc grep { {a} {fs {*}} } {
