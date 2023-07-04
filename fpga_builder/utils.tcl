@@ -589,20 +589,66 @@ proc build_device_from_params {params} {
 
   # Create 'impl_1' run (if not found)
   if {[string equal [get_runs -quiet impl_1] ""]} {
-    create_run -name impl_1 -part $part -flow {Vivado Implementation $vivado_year} -strategy $impl_strategy -constrset constrs_1 -parent_run synth_1
+    create_run -name impl_1 -part $part -flow {Vivado Implementation $vivado_year} -strategy "Vivado Implementation Defaults" -report_strategy {No Reports} -constrset constrs_1 -parent_run synth_1
   } else {
-    set_property strategy $impl_strategy [get_runs impl_1]
+    set_property strategy "Vivado Implementation Defaults" [get_runs impl_1]
     set_property flow "Vivado Implementation $vivado_year" [get_runs impl_1]
   }
-  set obj [get_runs impl_1]
-  set_property "needs_refresh" "1" $obj
-  set_property "part" "$part" $obj
-  set_property -name "steps.power_opt_design.is_enabled" -value "$use_power_opt" -objects $obj
-  set_property -name "steps.post_place_power_opt_design.is_enabled" -value "$use_power_opt" -objects $obj
-  set_property -name "steps.post_route_phys_opt_design.is_enabled" -value "$use_post_route_phys_opt" -objects $obj
-  set_property -name "steps.post_route_phys_opt_design.args.directive" -value "AggressiveExplore" -objects $obj
-  set_property "steps.write_bitstream.args.readback_file" "0" $obj
-  set_property "steps.write_bitstream.args.verbose" "0" $obj
+# -------------------------------
+set obj [get_runs impl_1]
+set_property set_report_strategy_name 1 $obj
+set_property report_strategy {Vivado Implementation Default Reports} $obj
+set_property set_report_strategy_name 0 $obj
+
+# create implementation reports
+create_report_config -report_name impl_init_report_timing_summary_0 -report_type report_timing_summary:1.0 -steps init_design -runs impl_1
+set obj [get_report_configs -of_objects [get_runs impl_1] impl_init_report_timing_summary_0]
+if { $obj != "" } {
+set_property -name "is_enabled" -value "0" -objects $obj
+set_property -name "options.max_paths" -value "10" -objects $obj
+
+}
+
+create_report_config -report_name impl_route_report_drc_0 -report_type report_drc:1.0 -steps route_design -runs impl_1
+create_report_config -report_name impl_route_report_methodology_0 -report_type report_methodology:1.0 -steps route_design -runs impl_1
+create_report_config -report_name impl_route_report_power_0 -report_type report_power:1.0 -steps route_design -runs impl_1
+create_report_config -report_name impl_route_report_route_status_0 -report_type report_route_status:1.0 -steps route_design -runs impl_1
+create_report_config -report_name impl_route_report_timing_summary_0 -report_type report_timing_summary:1.0 -steps route_design -runs impl_1
+set obj [get_report_configs -of_objects [get_runs impl_1] impl_route_report_timing_summary_0]
+if { $obj != "" } {
+set_property -name "options.max_paths" -value "10" -objects $obj
+
+}
+create_report_config -report_name impl_route_report_clock_utilization_0 -report_type report_clock_utilization:1.0 -steps route_design -runs impl_1
+create_report_config -report_name impl_route_report_bus_skew_0 -report_type report_bus_skew:1.1 -steps route_design -runs impl_1
+set obj [get_report_configs -of_objects [get_runs impl_1] impl_route_report_bus_skew_0]
+if { $obj != "" } {
+set_property -name "options.warn_on_violation" -value "1" -objects $obj
+
+}
+create_report_config -report_name impl_post_route_phys_opt_report_timing_summary_0 -report_type report_timing_summary:1.0 -steps post_route_phys_opt_design -runs impl_1
+set obj [get_report_configs -of_objects [get_runs impl_1] impl_post_route_phys_opt_report_timing_summary_0]
+if { $obj != "" } {
+set_property -name "options.max_paths" -value "10" -objects $obj
+set_property -name "options.warn_on_violation" -value "1" -objects $obj
+
+}
+
+set obj [get_runs impl_1]
+set_property -name "part" -value "xazu7ev-fbvb900-1Q-q" -objects $obj
+set_property -name "strategy" -value "Vivado Implementation Defaults" -objects $obj
+set_property -name "steps.opt_design.tcl.post" -value "$prj_dir/scripts/opt.tcl" -objects $obj
+set_property -name "steps.opt_design.args.directive" -value "ExploreWithRemap" -objects $obj
+set_property -name "steps.place_design.args.directive" -value "Explore" -objects $obj
+set_property -name "steps.phys_opt_design.args.directive" -value "AggressiveExplore" -objects $obj
+set_property -name "steps.route_design.args.directive" -value "AggressiveExplore" -objects $obj
+set_property -name "steps.post_route_phys_opt_design.is_enabled" -value "1" -objects $obj
+set_property -name "steps.post_route_phys_opt_design.args.directive" -value "AggressiveExplore" -objects $obj
+set_property -name "steps.write_bitstream.args.readback_file" -value "0" -objects $obj
+set_property -name "steps.write_bitstream.args.verbose" -value "0" -objects $obj
+
+# -----------------------------------
+
 
   # set the current impl run
   current_run -implementation [get_runs impl_1]
