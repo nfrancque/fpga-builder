@@ -146,8 +146,7 @@ proc build {proj_name top_name proj_dir {allow_timing_fail 0}} {
   set timing_pass [expr {$worst_slack >= 0}]
   if {$timing_pass == 0} {
     puts "ERROR: Failed to meet timing! Worst path slack was $worst_slack"
-    if {$allow_timing_fail == 0}
-    {
+    if {$allow_timing_fail == 0} {
       exit 1
     } else {
       puts "CRITICAL WARNING: Requested to continue on timing failure, continuing anyways.  USE WITH CAUTION"
