@@ -260,30 +260,84 @@ def set_bits(input, which_bits, val):
     input |= val << low
     return input
 
+#def get_usr_access(args, design_versions, device):
+#    PATCH_RANGE = (7, 0)
+#    MINOR_RANGE = (15, 8)
+#    MAJOR_RANGE = (23, 16)
+#    GOLDEN_IDX = 24
+#    RELEASE_IDX = 25
+#    RESERVED_RANGE = (31, 26)
+
+
+#    if design_versions:
+#        design_version = design_versions[device]
+#    else:
+#        design_version = "0.0.0"
+#    print(design_version)
+#    major, minor, patch = [int(field) for field in design_version.split(".")]
+#    is_golden = 1 if args.golden else 0
+#    is_release = 1 if args.release else 0
+#    usr_access = 0
+#    usr_access = set_bits(usr_access, PATCH_RANGE, patch)
+#    usr_access = set_bits(usr_access, MINOR_RANGE, minor)
+#    usr_access = set_bits(usr_access, MAJOR_RANGE, major)
+#    usr_access = set_bits(usr_access, GOLDEN_IDX, is_golden)
+#    usr_access = set_bits(usr_access, RELEASE_IDX, is_release)
+#    usr_access = set_bits(usr_access, RESERVED_RANGE, 0)
+#    return usr_access
+
 def get_usr_access(args, design_versions, device):
     PATCH_RANGE = (7, 0)
-    MINOR_RANGE = (15, 8)
-    MAJOR_RANGE = (23, 16)
-    GOLDEN_IDX = 24
-    RELEASE_IDX = 25
+    MAJOR_RANGE = (15, 8)
+    MINOR_RANGE = (23, 16)
+    PROD_PROTO  = 24
+    GOLDE_NORMAL = 25
     RESERVED_RANGE = (31, 26)
 
 
     if design_versions:
         design_version = design_versions[device]
+        print("hello: 1")
+        print(design_version)
     else:
-        design_version = "0.0.0"
-    print(design_version)
-    major, minor, patch = [int(field) for field in design_version.split(".")]
-    is_golden = 1 if args.golden else 0
-    is_release = 1 if args.release else 0
-    usr_access = 0
-    usr_access = set_bits(usr_access, PATCH_RANGE, patch)
-    usr_access = set_bits(usr_access, MINOR_RANGE, minor)
-    usr_access = set_bits(usr_access, MAJOR_RANGE, major)
-    usr_access = set_bits(usr_access, GOLDEN_IDX, is_golden)
-    usr_access = set_bits(usr_access, RELEASE_IDX, is_release)
-    usr_access = set_bits(usr_access, RESERVED_RANGE, 0)
+        design_version = "0.0.0.0"
+        print("hello: 2")
+        print(design_version)
+    major, minor, patch, production_prototype = [int(field) for field in design_version.split(".")]
+    normal_proto   =  format(0, '02x')
+    normal_release =  format(1, '02x') 
+    golden_proto   =  format(2, '02x') 
+    golden_release =  format(3, '02x')
+        
+       
+    print ("normal_proto",   normal_proto)
+    print ("normal_release", normal_release)
+    print ("golden_proto",   golden_proto)
+    print ("golden_release", golden_release)
+    
+    minor_hex   =  format(minor, '02x')
+    major_hex   =  format(major, '02x') 
+    patch_hex   =  format(patch, '02x') 
+     
+    
+    print ("major_hex", major_hex)
+    print ("minor_hex", minor_hex)
+    print ("patch_hex", patch_hex) 
+    
+    design_version = "%s%s%s"%(major_hex,minor_hex,patch_hex)
+    print ("Design Version", design_version)
+    
+    if  production_prototype == 1:
+       usr_access_value = "%s%s%s"%(design_version,normal_release,golden_release)
+       print ("usr_access_value :D",usr_access_value)
+    else:
+       usr_access_value = "%s%s%s"%(design_version,normal_proto,golden_proto)
+       print ("usr_access_value :D",usr_access_value)
+    
+    #is_golden = 1 if args.golden else 0
+    #is_release = 1 if args.release else 0
+    usr_access = f"0x{usr_access_value}"
+    print("usr_access:D", usr_access)
     return usr_access
 
 

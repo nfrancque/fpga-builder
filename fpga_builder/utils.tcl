@@ -87,6 +87,16 @@ proc build {proj_name top_name proj_dir} {
 
   set output_dir [file normalize $proj_dir/../output]
 
+  puts "usr_access value: $usr_access"
+  set design_version [string range "$usr_access" 2 7]
+  set normal         [string range "$usr_access" 8 9]
+  set golden         [string range "$usr_access" 10 11]
+  set regen_bit      [string range "$usr_access" 12 13] 
+  puts "normal: $normal"
+  puts "golden: $golden"
+  puts "design_version: $design_version"
+  puts "regen_bit: $regen_bit"
+  
   configure_warnings_and_errors
 
   # If anything happened before now, that was setup (BD generation etc)
@@ -103,6 +113,12 @@ proc build {proj_name top_name proj_dir} {
   # Synth
   set start [clock seconds]
   launch_runs -jobs $max_threads -verbose synth_1
+  #set synthesis options
+  set obj [get_runs synth_1]
+  set_property set_report_strategy_name 1 $obj
+  set_property report_strategy {Vivado Synthesis Default Reports} $obj
+  set_property set_report_strategy_name 0 $obj
+
   wait_on_run synth_1
   if {[get_property PROGRESS [get_runs synth_1]] != "100%"} {
     set failed_runs [get_runs -filter {IS_SYNTHESIS && PROGRESS < 100}]
@@ -187,9 +203,9 @@ proc build {proj_name top_name proj_dir} {
     puts "Total power is $total_power W"
   }
 
-  # Set access bits 
-  set_property BITSTREAM.CONFIG.USR_ACCESS $usr_access [current_design]
-  set_property BITSTREAM.CONFIG.USERID     $usr_access [current_design]
+  ## Set access bits 
+  #set_property BITSTREAM.CONFIG.USR_ACCESS $normal$design_version [current_design]
+  #set_property BITSTREAM.CONFIG.USERID     $normal$design_version [current_design]
 
   set report_time [expr [clock seconds] - $start]
   
@@ -204,7 +220,12 @@ proc build {proj_name top_name proj_dir} {
   # Export
   puts "Exporting files..."
   set start [clock seconds]
+
+  set_property BITSTREAM.CONFIG.USR_ACCESS $normal$design_version [current_design]
+  set_property BITSTREAM.CONFIG.USERID     $normal$design_version [current_design]
   
+  write_bitstream -verbose -force "${proj_dir}/${proj_name}.runs/impl_1/${top_name}.bit"
+
   set bitstream ${proj_dir}/${proj_name}.runs/impl_1/${top_name}.bit
   global use_vitis
   if {[file exists $bitstream]} {
@@ -489,6 +510,17 @@ proc build_device_from_params {params} {
   set proj_dir [pwd]/$proj_name
   clean_proj_if_needed $proj_dir
 
+  set prj_dir [pwd]
+  
+  puts "-------------------"
+  puts "Test :D : $prj_dir"
+  puts "-------------------"
+  set prj_dir [file dirname $prj_dir]
+  set prj_dir [file dirname $prj_dir]
+  puts "-------------------"
+  puts "Test 2 : $prj_dir"
+  puts "-------------------"
+
   # Create project
   create_project $proj_name $proj_dir
 
@@ -569,20 +601,38 @@ proc build_device_from_params {params} {
   set_property "top" $top $obj
   set_property "xelab.nosort" "1" $obj
   set_property "xelab.unifast" "" $obj
+  
+  set obj [get_filesets constrs_1]
+  set_property -name "target_part" -value "xazu7ev-fbvb900-1Q-q" -objects $obj
+
 
   # #############################################################################
   # Synthesis and implementation
   # #############################################################################
   # Create 'synth_1' run (if not found)
   if {[string equal [get_runs -quiet synth_1] ""]} {
-    create_run -name synth_1 -part $part -flow {Vivado Synthesis $vivado_year} -strategy $synth_strategy -constrset constrs_1
+    create_run -name synth_1 -part $part -flow {Vivado Synthesis $vivado_year} -strategy "Vivado Synthesis Defaults" -report_strategy {No Reports} -constrset constrs_1
   } else {
-    set_property strategy $synth_strategy [get_runs synth_1]
+    set_property strategy "Vivado Synthesis Defaults" [get_runs synth_1]
     set_property flow "Vivado Synthesis $vivado_year" [get_runs synth_1]
   }
   set obj [get_runs synth_1]
-  set_property "needs_refresh" "1" $obj
-  set_property "part" "$part" $obj
+  set_property set_report_strategy_name 1 $obj
+  set_property report_strategy {Vivado Synthesis Default Reports} $obj
+  set_property set_report_strategy_name 0 $obj
+
+  # Create 'synth_1_synth_report_utilization_0' report (if not found)
+  if { [ string equal [get_report_configs -of_objects [get_runs synth_1] synth_1_synth_report_utilization_0] "" ] } {
+    create_report_config -report_name synth_1_synth_report_utilization_0 -report_type report_utilization:1.0 -steps synth_design -runs synth_1
+  }
+  set obj [get_report_configs -of_objects [get_runs synth_1] synth_1_synth_report_utilization_0]
+  if { $obj != "" } {
+
+  }
+  
+  set obj [get_runs synth_1]
+  set_property -name "auto_incremental_checkpoint" -value "1" -objects $obj
+  set_property -name "strategy" -value "Vivado Synthesis Defaults" -objects $obj
 
   # set the current synth run
   current_run -synthesis [get_runs synth_1]
