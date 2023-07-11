@@ -411,7 +411,7 @@ def run_vivado(
     # Defaults will be at the back so we can use these internally
     args.extend(default_args)
     arg_string = " ".join('"' + item + '"' for item in args)
-    cmd_string = f"{vivado_cmd} -mode batch -log '{log}' -nojournal -source '{script_path}' -tclargs {arg_string}"
+    cmd_string = f"{vivado_cmd} -mode batch -notrace -log '{log}' -nojournal -source '{script_path}' -tclargs {arg_string}"
     if not run_dir.exists():
         run_dir.mkdir(parents=True)
     print("Running:", cmd_string)
