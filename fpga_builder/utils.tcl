@@ -227,6 +227,43 @@ proc build {proj_name top_name proj_dir} {
   write_bitstream -verbose -force "${proj_dir}/${proj_name}.runs/impl_1/${top_name}.bit"
 
   set bitstream ${proj_dir}/${proj_name}.runs/impl_1/${top_name}.bit
+  
+  # ----------------------- Getting info from bitstream --------------------------------- #
+  set  usr_access_2 [get_property BITSTREAM.CONFIG.USR_ACCESS [current_design]]
+  set  usr_id     [get_property BITSTREAM.CONFIG.USERID [current_design]]
+  puts "USR_ACCESS: $usr_access_2"
+  puts "USR_ID    : $usr_id"
+  set  reserved   [string range "$usr_access_2" 0 1]
+  binary scan     [binary format H* $reserved] B* bits
+
+  ##----------------------------------------------
+  ##       "usr_access" - String composition     |
+  ##----------------------------------------------
+  ##00|01 | 02 | 03 | 04 | 05 | 06 | 07|
+  ##----------------------------------------------
+  ##0 | 0 |  MAJOR  |  MINOR  |  PATCH |
+  ##----------------------------------------------
+  ##"reserved" - used to extract "usr_acess [02:03]" 
+  ##"bits"     - convert "reserved" to binary
+
+  puts "+--------------------------------------------------------+"
+  puts "                     REVISION INFO                        " 
+  puts "+--------------------------------------------------------+"
+  puts "+------------------+-------------------------------------+"
+  puts "PATCH VERSION (hex)| 0x[string range "$usr_access_2" 6 7]   "
+  puts "+------------------+-------------------------------------+"
+  puts "MINOR VERSION (hex)| 0x[string range "$usr_access_2" 4 5]   "
+  puts "+------------------+-------------------------------------+"
+  puts "MAJOR VERSION (hex)| 0x[string range "$usr_access_2" 2 3]   "
+  puts "+------------------+-------------------------------------+"
+  puts "PROD/PROTO BIT     | [string index "$bits" 7]             "    
+  puts "+------------------+-------------------------------------+"
+  puts "GOLDEN/NORMAL BIT  | [string index "$bits" 6]             "
+  puts "+------------------+-------------------------------------+"
+  puts "RESERVED BITS      | [string range "$bits" 0 5]           "
+  puts "+------------------+-------------------------------------+"
+  # ------------------------------------------------------------------------------------- #
+
   global use_vitis
   if {[file exists $bitstream]} {
     file copy -force $bitstream $output_dir/
@@ -513,7 +550,7 @@ proc build_device_from_params {params} {
   set prj_dir [pwd]
   
   puts "-------------------"
-  puts "Test :D : $prj_dir"
+  puts "Test 1 : $prj_dir"
   puts "-------------------"
   set prj_dir [file dirname $prj_dir]
   set prj_dir [file dirname $prj_dir]
