@@ -91,7 +91,8 @@ def build_default(
     vivado_versions=None,
     other_files=None,
     and_tar=False,
-    design_versions=None
+    design_versions=None,
+    on_finish=None,
 ):
     """
     Parses arguments and runs the build on the selected device
@@ -191,7 +192,7 @@ def build_default(
                 print("Doing a filelist", other_files, caller_dir())
                 generate_filelist(caller_dir(), run_dir, other_files=other_files)
             
-            build(run_tcl, args, run_dir, tcl_args, vivado_version, and_tar, device, usr_access=usr_access)
+            build(run_tcl, args, run_dir, tcl_args, vivado_version, and_tar, device, usr_access=usr_access, on_finish=on_finish)
         if do_deploy:
             print(f"Deploying {device}...")
             # Deploy stuff
@@ -217,7 +218,7 @@ def open_vivado_gui(project, vivado_version, run_dir):
     run_cmd(cmd, blocking=False, cwd=run_dir)
 
 
-def build(run_tcl, args, run_dir=None, tcl_args=None, vivado_version=None, and_tar=False, device_name=None, usr_access=0):
+def build(run_tcl, args, run_dir=None, tcl_args=None, vivado_version=None, and_tar=False, device_name=None, usr_access=0, on_finish=None):
     """
     R the build on the selected device
 
@@ -239,6 +240,7 @@ def build(run_tcl, args, run_dir=None, tcl_args=None, vivado_version=None, and_t
         and_tar,
         device_name,
         usr_access,
+        on_finish,
     )
     stats = get_stats(run_dir, args.num_threads)
     print(stats)
@@ -297,6 +299,7 @@ def run_vivado(
     and_tar=False,
     device_name=None,
     usr_access=0,
+    on_finish=None
 ):
     """
     Runs vivado to run the build of the selected run directory
@@ -372,9 +375,11 @@ def run_vivado(
             warning(line)
         else:
             info(line)
-
     run_cmd(cmd_string, cwd=run_dir, line_handler=line_handler)
+    if on_finish:
+        on_finish(output_dir, device_name)
     any_only = build_args.bd_only or build_args.synth_only or build_args.impl_only
+
     if and_tar and not any_only:
         pin_txt = get_changeset_numbers()
         pin_file = output_dir / "pin.txt"
@@ -385,7 +390,7 @@ def run_vivado(
         tar_name = f"{get_app_name()}-{device_name}-{branch}.{deployer.get_current_commit_hash()[:8]}.tar.xz"
         tar_target = output_dir / tar_name
         files = []
-        for ext in (".rpt", ".hdf", ".xsa", ".bit", ".log", ".txt", ".ltx"):
+        for ext in (".rpt", ".hdf", ".xsa", ".bit", ".log", ".txt", ".ltx", "*.h"):
             files.extend(list(output_dir.glob(f"*{ext}")))
         with tarfile.open(tar_target, "w:xz") as tar:
             for file in files:
