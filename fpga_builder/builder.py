@@ -46,6 +46,7 @@ import sys
 from pprint import pprint
 from os import environ
 import tarfile
+
 from .utils import (
     warning,
     err,
@@ -126,7 +127,7 @@ def build_default(
         if run_dirs:
             run_dir = run_dirs[device]
         else:
-            run_dir = caller_dir() / "build" / device
+            run_dir = caller_dir() / "/build" / device
         if vivado_versions:
             vivado_version = vivado_versions[device]
         else:
@@ -175,8 +176,9 @@ def build_default(
             run_tcl = tcl_scripts[device]
             if run_dirs:
                 run_dir = run_dirs[device]
+                print("test b",run_dir)
             else:
-                run_dir = caller_dir() / "build" / device
+                run_dir = caller_dir() / "/build" / device
             if tcl_arg_dict:
                 tcl_args = tcl_arg_dict[device]
             else:
@@ -186,11 +188,10 @@ def build_default(
             else:
                 vivado_version = None
             usr_access = get_usr_access(args, design_versions, device)
-            if other_files or (caller_dir() / "blocks.yaml").exists():
+            if other_files or (caller_dir() / "/blocks.yaml").exists():
                 # Workaround so doesn't always have to be next to it
                 print("Doing a filelist", other_files, caller_dir())
                 generate_filelist(caller_dir(), run_dir, other_files=other_files)
-            
             build(run_tcl, args, run_dir, tcl_args, vivado_version, and_tar, device, usr_access=usr_access)
         if do_deploy:
             print(f"Deploying {device}...")
@@ -259,32 +260,6 @@ def set_bits(input, which_bits, val):
     # Add in our new value
     input |= val << low
     return input
-
-#def get_usr_access(args, design_versions, device):
-#    PATCH_RANGE = (7, 0)
-#    MINOR_RANGE = (15, 8)
-#    MAJOR_RANGE = (23, 16)
-#    GOLDEN_IDX = 24
-#    RELEASE_IDX = 25
-#    RESERVED_RANGE = (31, 26)
-
-
-#    if design_versions:
-#        design_version = design_versions[device]
-#    else:
-#        design_version = "0.0.0"
-#    print(design_version)
-#    major, minor, patch = [int(field) for field in design_version.split(".")]
-#    is_golden = 1 if args.golden else 0
-#    is_release = 1 if args.release else 0
-#    usr_access = 0
-#    usr_access = set_bits(usr_access, PATCH_RANGE, patch)
-#    usr_access = set_bits(usr_access, MINOR_RANGE, minor)
-#    usr_access = set_bits(usr_access, MAJOR_RANGE, major)
-#    usr_access = set_bits(usr_access, GOLDEN_IDX, is_golden)
-#    usr_access = set_bits(usr_access, RELEASE_IDX, is_release)
-#    usr_access = set_bits(usr_access, RESERVED_RANGE, 0)
-#    return usr_access
 
 def get_usr_access(args, design_versions, device):
     PATCH_RANGE = (7, 0)
@@ -375,7 +350,6 @@ def run_vivado(
     if version is None:
         version = "2019.1"
     vivado_cmd = get_vivado_cmd(version)
-    script_path = Path(build_tcl).resolve()
     stats_file = get_stats_file(run_dir, build_args.num_threads)
     output_dir = run_dir / "output"
     if output_dir.exists():
@@ -409,6 +383,10 @@ def run_vivado(
         # User args go at front if provided
         args = [str(arg) for arg in tcl_args]
     # Defaults will be at the back so we can use these internally
+    script_path_tcl = Path(build_tcl).resolve()
+    script_driver_path = os.getcwd()
+    script_tcl_name = os.path.basename(script_path_tcl)
+    script_path = script_driver_path + script_tcl_name
     args.extend(default_args)
     arg_string = " ".join('"' + item + '"' for item in args)
     cmd_string = f"{vivado_cmd} -mode batch -notrace -log '{log}' -nojournal -source '{script_path}' -tclargs {arg_string}"
@@ -530,10 +508,12 @@ def get_stats_file(run_dir, num_threads):
         A unique path to a text file that can be populated with stats about the build
 
     """
+    import os
+    run_directory =  Path(run_dir)
     hostname = socket.gethostname()
     os = sys.platform
     filename = f"stats_{hostname}_{os}_p{num_threads}.txt"
-    return (run_dir / "output" / filename).resolve()
+    return (run_directory / "output" / filename)
 
 
 def get_stats(run_dir, num_threads):

@@ -36,7 +36,9 @@ Utils for fpga build and deploy mechanism
 
 import subprocess
 from pathlib import Path
+from os import environ
 import sys
+import os
 
 try:
     from colorama import Fore, Style, init as colorama_init
@@ -73,6 +75,7 @@ def run_cmd(cmd, cwd=None, silent=False, line_handler=None, blocking=True):
     Returns:
         None
     """
+    
     if not cwd:
         cwd = Path.cwd()
 
@@ -89,7 +92,6 @@ def run_cmd(cmd, cwd=None, silent=False, line_handler=None, blocking=True):
         print("Running command:")
         print(cmd)
         print(f"From directory {cwd}")
-
     cmd = cmd.replace("\\", "\\\\")
     split_cmd = shlex.split(cmd)
     if blocking:
@@ -196,7 +198,8 @@ def caller_dir():
     # Use the second one up since calling this will invoke another stack frame
     frame = inspect.stack()[2]
     filename = frame[0].f_code.co_filename
-    dir = Path(filename).resolve().parent
+    dir_path = os.getcwd()
+    dir = Path(dir_path.replace('\\', ''))
     return dir
 
 
