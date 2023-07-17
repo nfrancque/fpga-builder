@@ -327,6 +327,7 @@ def run_vivado(
     device_name=None,
     usr_access=0,
 ):
+    import platform
     """
     Runs vivado to run the build of the selected run directory
 
@@ -383,10 +384,14 @@ def run_vivado(
         # User args go at front if provided
         args = [str(arg) for arg in tcl_args]
     # Defaults will be at the back so we can use these internally
-    script_path_tcl = Path(build_tcl).resolve()
-    script_driver_path = os.getcwd()
-    script_tcl_name = os.path.basename(script_path_tcl)
-    script_path = script_driver_path + script_tcl_name
+    platform_sys = platform.system()
+    if (platform_sys == "Linux"):
+        script_path = Path(build_tcl).resolve()
+    elif (platform_sys == "Windows"):
+        script_path_tcl = Path(build_tcl).resolve()
+        script_driver_path = os.getcwd()
+        script_tcl_name = os.path.basename(script_path_tcl)
+        script_path = script_driver_path + script_tcl_name
     args.extend(default_args)
     arg_string = " ".join('"' + item + '"' for item in args)
     cmd_string = f"{vivado_cmd} -mode batch -notrace -log '{log}' -nojournal -source '{script_path}' -tclargs {arg_string}"
@@ -508,8 +513,13 @@ def get_stats_file(run_dir, num_threads):
         A unique path to a text file that can be populated with stats about the build
 
     """
+    import platform
     import os
-    run_directory =  Path(run_dir)
+    platform_sys = platform.system()
+    if (platform_sys == "Linux"):
+        run_directory = run_dir;
+    elif (platform_sys == "Windows"):
+        run_directory =  Path(run_dir)
     hostname = socket.gethostname()
     os = sys.platform
     filename = f"stats_{hostname}_{os}_p{num_threads}.txt"
