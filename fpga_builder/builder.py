@@ -127,7 +127,7 @@ def build_default(
         if run_dirs:
             run_dir = run_dirs[device]
         else:
-            run_dir = caller_dir() / "/build" / device
+            run_dir = caller_dir() / "build" / device
         if vivado_versions:
             vivado_version = vivado_versions[device]
         else:
@@ -178,7 +178,7 @@ def build_default(
                 run_dir = run_dirs[device]
                 print("test b",run_dir)
             else:
-                run_dir = caller_dir() / "/build" / device
+                run_dir = caller_dir() / "build" / device
             if tcl_arg_dict:
                 tcl_args = tcl_arg_dict[device]
             else:
@@ -188,7 +188,7 @@ def build_default(
             else:
                 vivado_version = None
             usr_access = get_usr_access(args, design_versions, device)
-            if other_files or (caller_dir() / "/blocks.yaml").exists():
+            if other_files or (caller_dir() / "blocks.yaml").exists():
                 # Workaround so doesn't always have to be next to it
                 print("Doing a filelist", other_files, caller_dir())
                 generate_filelist(caller_dir(), run_dir, other_files=other_files)

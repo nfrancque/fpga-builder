@@ -204,10 +204,8 @@ def caller_dir():
     dir_path = os.getcwd()
     if (platform_sys == "Linux"):
         return Path(filename).resolve().parent
-        print("Linux")
     elif (platform_sys == "Windows"):
-        return Path(dir_path.replace('\\', ''))
-        print("Windows")
+        return Path(dir_path)
 
 
 
