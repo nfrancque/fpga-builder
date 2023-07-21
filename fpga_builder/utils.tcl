@@ -650,8 +650,8 @@ proc build_device_from_params {params} {
   if {[string equal [get_runs -quiet synth_1] ""]} {
     create_run -name synth_1 -part $part -flow {Vivado Synthesis $vivado_year} -strategy "Vivado Synthesis Defaults" -report_strategy {No Reports} -constrset constrs_1
   } else {
-    set_property strategy "Vivado Synthesis Defaults" [get_runs synth_1]
-    set_property flow "Vivado Synthesis $vivado_year" [get_runs synth_1]
+    set_property strategy $synth_strategy [get_runs synth_1]
+    set_property flow $synth_flow [get_runs synth_1]
   }
   set obj [get_runs synth_1]
   set_property set_report_strategy_name 1 $obj
@@ -668,8 +668,8 @@ proc build_device_from_params {params} {
   }
   
   set obj [get_runs synth_1]
-  set_property -name "auto_incremental_checkpoint" -value "1" -objects $obj
-  set_property -name "strategy" -value "Vivado Synthesis Defaults" -objects $obj
+  set_property -name "auto_incremental_checkpoint" -value $auto_incremental_checkpoint -objects $obj
+  set_property -name "strategy" -value $synth_strategy -objects $obj
 
   # set the current synth run
   current_run -synthesis [get_runs synth_1]
@@ -678,8 +678,8 @@ proc build_device_from_params {params} {
   if {[string equal [get_runs -quiet impl_1] ""]} {
     create_run -name impl_1 -part $part -flow {Vivado Implementation $vivado_year} -strategy "Vivado Implementation Defaults" -report_strategy {No Reports} -constrset constrs_1 -parent_run synth_1
   } else {
-    set_property strategy "Vivado Implementation Defaults" [get_runs impl_1]
-    set_property flow "Vivado Implementation $vivado_year" [get_runs impl_1]
+    set_property strategy $impl_strategy [get_runs impl_1]
+    set_property flow $impl_flow [get_runs impl_1]
   }
 # -------------------------------
 set obj [get_runs impl_1]
@@ -691,8 +691,8 @@ set_property set_report_strategy_name 0 $obj
 create_report_config -report_name impl_init_report_timing_summary_0 -report_type report_timing_summary:1.0 -steps init_design -runs impl_1
 set obj [get_report_configs -of_objects [get_runs impl_1] impl_init_report_timing_summary_0]
 if { $obj != "" } {
-set_property -name "is_enabled" -value "0" -objects $obj
-set_property -name "options.max_paths" -value "10" -objects $obj
+set_property -name "is_enabled" -value $is_enabled -objects $obj
+set_property -name "options.max_paths" -value $max_paths -objects $obj
 
 }
 
@@ -703,7 +703,7 @@ create_report_config -report_name impl_route_report_route_status_0 -report_type 
 create_report_config -report_name impl_route_report_timing_summary_0 -report_type report_timing_summary:1.0 -steps route_design -runs impl_1
 set obj [get_report_configs -of_objects [get_runs impl_1] impl_route_report_timing_summary_0]
 if { $obj != "" } {
-set_property -name "options.max_paths" -value "10" -objects $obj
+set_property -name "options.max_paths" -value $max_paths -objects $obj
 
 }
 create_report_config -report_name impl_route_report_clock_utilization_0 -report_type report_clock_utilization:1.0 -steps route_design -runs impl_1
@@ -716,23 +716,26 @@ set_property -name "options.warn_on_violation" -value "1" -objects $obj
 create_report_config -report_name impl_post_route_phys_opt_report_timing_summary_0 -report_type report_timing_summary:1.0 -steps post_route_phys_opt_design -runs impl_1
 set obj [get_report_configs -of_objects [get_runs impl_1] impl_post_route_phys_opt_report_timing_summary_0]
 if { $obj != "" } {
-set_property -name "options.max_paths" -value "10" -objects $obj
+set_property -name "options.max_paths" -value $max_paths -objects $obj
 set_property -name "options.warn_on_violation" -value "1" -objects $obj
 
 }
 
 set obj [get_runs impl_1]
-set_property -name "part" -value "xazu7ev-fbvb900-1Q-q" -objects $obj
-set_property -name "strategy" -value "Vivado Implementation Defaults" -objects $obj
-set_property -name "steps.opt_design.tcl.post" -value "$prj_dir/scripts/opt.tcl" -objects $obj
-set_property -name "steps.opt_design.args.directive" -value "ExploreWithRemap" -objects $obj
-set_property -name "steps.place_design.args.directive" -value "Explore" -objects $obj
-set_property -name "steps.phys_opt_design.args.directive" -value "AggressiveExplore" -objects $obj
-set_property -name "steps.route_design.args.directive" -value "AggressiveExplore" -objects $obj
-set_property -name "steps.post_route_phys_opt_design.is_enabled" -value "1" -objects $obj
-set_property -name "steps.post_route_phys_opt_design.args.directive" -value "AggressiveExplore" -objects $obj
-set_property -name "steps.write_bitstream.args.readback_file" -value "0" -objects $obj
-set_property -name "steps.write_bitstream.args.verbose" -value "0" -objects $obj
+set_property -name "needs_refresh" -value $need_refresh -objects $obj
+set_property -name "part" -value $part -objects $obj
+set_property -name "strategy" -value $impl_strategy -objects $obj
+set_property -name "steps.opt_design.tcl.post" -value $opt_design_tcl_post -objects $obj
+set_property -name "steps.opt_design.args.directive" -value $opt_design_args_directive -objects $obj
+set_property -name "steps.place_design.args.directive" -value $place_design_args_directive -objects $obj
+set_property -name "steps.phys_opt_design.is_enabled" -value "1" -objects $obj
+set_property -name "steps.phys_opt_design.args.directive" -value $phys_opt_design_args_directive -objects $obj
+set_property -name "steps.route_design.args.directive" -value $route_design_args_directive -objects $obj
+set_property -name "steps.post_route_phys_opt_design.is_enabled" -value $post_route_phys_opt_design_is_enabled -objects $obj
+set_property -name "steps.post_route_phys_opt_design.args.directive" -value $post_route_phys_opt_design_args_directive -objects $obj
+set_property -name "steps.write_bitstream.args.readback_file" -value $write_bitstream_args_readback_file -objects $obj
+set_property -name "steps.write_bitstream.args.verbose" -value $write_bitstream_args_verbose -objects $obj
+
 
 # -----------------------------------
 
@@ -805,4 +808,5 @@ proc configure_warnings_and_errors {} {
 
   # Reclassify 8-3332 as an info message.  These are primarily created by the synthesis tool
   set_msg_config -id {[Synth 8-3332]} -new_severity INFO
+
 }
