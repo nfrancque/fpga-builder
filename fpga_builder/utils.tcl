@@ -535,10 +535,24 @@ proc build_device_from_params {params} {
   set synth_strategy [dict get $params synth_strategy ]
   set impl_strategy [dict get $params impl_strategy ]
   set origin_dir [dict get $params origin_dir]
-  set use_power_opt [dict_get_default $params use_power_opt 1]
-  set use_post_route_phys_opt [dict_get_default $params use_post_route_phys_opt 1]
+  set auto_incremental_checkpoint [dict get $params auto_incremental_checkpoint]
+  set is_enabled [dict get $params is_enabled]
+  set max_paths [dict get $params max_paths]
+  set use_power_opt [dict get $params use_power_opt]
+  set use_post_route_phys_opt [dict get $params use_post_route_phys_opt]
+  set target_language [dict get $params target_language]
+  set need_refresh [dict get $params need_refresh]
+  set opt_design_tcl_post [dict get $params opt_design_tcl_post]
+  set opt_design_args_directive [dict get $params opt_design_args_directive]
+  set place_design_args_directive [dict get $params place_design_args_directive]
+  set phys_opt_design_is_enabled [dict get $params phys_opt_design_is_enabled]
+  set phys_opt_design_args_directive [dict get $params phys_opt_design_args_directive]
+  set route_design_args_directive [dict get $params route_design_args_directive]
+  set post_route_phys_opt_design_is_enabled [dict get $params post_route_phys_opt_design_is_enabled]
+  set post_route_phys_opt_design_args_directive [dict get $params post_route_phys_opt_design_args_directive]
+  set write_bitstream_args_readback_file [dict get $params write_bitstream_args_readback_file]
+  set write_bitstream_args_verbose [dict get $params write_bitstream_args_verbose]
   set make_wrapper [dict_get_default $params make_wrapper 0]
-  set target_language [dict_get_default $params target_language VHDL]
   set power_threshold [dict_get_default $params power_threshold 0]  
   set design_name_internal [dict_get_default $params design_name $top]
 
@@ -548,15 +562,11 @@ proc build_device_from_params {params} {
   clean_proj_if_needed $proj_dir
 
   set prj_dir [pwd]
-  
-  puts "-------------------"
-  puts "Test 1 : $prj_dir"
+  puts "Project directory"
   puts "-------------------"
   set prj_dir [file dirname $prj_dir]
   set prj_dir [file dirname $prj_dir]
-  puts "-------------------"
-  puts "Test 2 : $prj_dir"
-  puts "-------------------"
+
 
   # Create project
   create_project $proj_name $proj_dir
@@ -651,7 +661,7 @@ proc build_device_from_params {params} {
     create_run -name synth_1 -part $part -flow {Vivado Synthesis $vivado_year} -strategy "Vivado Synthesis Defaults" -report_strategy {No Reports} -constrset constrs_1
   } else {
     set_property strategy $synth_strategy [get_runs synth_1]
-    set_property flow $synth_flow [get_runs synth_1]
+    set_property flow "Vivado Synthesis $vivado_year" [get_runs synth_1]
   }
   set obj [get_runs synth_1]
   set_property set_report_strategy_name 1 $obj
@@ -679,7 +689,7 @@ proc build_device_from_params {params} {
     create_run -name impl_1 -part $part -flow {Vivado Implementation $vivado_year} -strategy "Vivado Implementation Defaults" -report_strategy {No Reports} -constrset constrs_1 -parent_run synth_1
   } else {
     set_property strategy $impl_strategy [get_runs impl_1]
-    set_property flow $impl_flow [get_runs impl_1]
+    set_property flow "Vivado Implementation $vivado_year" [get_runs impl_1]
   }
 # -------------------------------
 set obj [get_runs impl_1]
