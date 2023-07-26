@@ -414,7 +414,7 @@ proc build_block { filelist build_dir device generics {board 0} {bd_file 0} {top
   # set_property target_language VHDL [current_project]
   set_property top $top_name [current_fileset]
   set_property "xpm_libraries" "XPM_CDC XPM_FIFO XPM_MEMORY" [current_project]
-  #set_property STEPS.SYNTH_DESIGN.ARGS.FLATTEN_HIERARCHY none [get_runs synth_1]
+  set_property STEPS.SYNTH_DESIGN.ARGS.FLATTEN_HIERARCHY none [get_runs synth_1]
   set_property STEPS.OPT_DESIGN.IS_ENABLED false [get_runs impl_1]
 
   # Set generics
