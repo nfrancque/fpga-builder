@@ -411,10 +411,10 @@ proc build_block { filelist build_dir device generics {board 0} {bd_file 0} {top
   add_files_from_filelist $filelist
 
   # Settings
-  set_property target_language VHDL [current_project]
+  # set_property target_language VHDL [current_project]
   set_property top $top_name [current_fileset]
   set_property "xpm_libraries" "XPM_CDC XPM_FIFO XPM_MEMORY" [current_project]
-  set_property STEPS.SYNTH_DESIGN.ARGS.FLATTEN_HIERARCHY none [get_runs synth_1]
+  #set_property STEPS.SYNTH_DESIGN.ARGS.FLATTEN_HIERARCHY none [get_runs synth_1]
   set_property STEPS.OPT_DESIGN.IS_ENABLED false [get_runs impl_1]
 
   # Set generics
@@ -578,13 +578,13 @@ proc build_device_from_params {params} {
 
   # Set project properties
   set obj [get_projects $proj_name]
-  set_property "default_lib" "xil_defaultlib" $obj
+  set_property "default_lib" -value "xil_defaultlib" -objects $obj 
+  set_property -name "ip.user_files_dir" -value "$proj_dir/$proj_name.ip_user_files" -object $obj
   set_property -name "ip_cache_permissions" -value "read write" -objects $obj
   set_property -name "ip_output_repo" -value "$proj_dir/$proj_name.cache/ip" -objects $obj
-  set_property "part" "$part" $obj
+  set_property -name "part" -value $part -objects $obj
   set_property "sim.ip.auto_export_scripts" "1" $obj
   set_property -name "ip_interface_inference_priority" -value "" -objects $obj
-  set_property "simulator_language" "Mixed" $obj
   set_property "target_language" "$target_language" $obj
   set_property -name "enable_vhdl_2008" -value "1" -objects $obj
   set_property -name "xpm_libraries" -value "XPM_CDC XPM_FIFO XPM_MEMORY" -objects $obj
