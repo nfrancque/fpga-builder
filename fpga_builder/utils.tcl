@@ -228,23 +228,12 @@ proc build {proj_name top_name proj_dir} {
 
   set bitstream ${proj_dir}/${proj_name}.runs/impl_1/${top_name}.bit
   
-  # ----------------------- Getting info from bitstream --------------------------------- #
   set  usr_access_2 [get_property BITSTREAM.CONFIG.USR_ACCESS [current_design]]
   set  usr_id     [get_property BITSTREAM.CONFIG.USERID [current_design]]
   puts "USR_ACCESS: $usr_access_2"
   puts "USR_ID    : $usr_id"
   set  reserved   [string range "$usr_access_2" 0 1]
   binary scan     [binary format H* $reserved] B* bits
-
-  ##----------------------------------------------
-  ##       "usr_access" - String composition     |
-  ##----------------------------------------------
-  ##00|01 | 02 | 03 | 04 | 05 | 06 | 07|
-  ##----------------------------------------------
-  ##0 | 0 |  MAJOR  |  MINOR  |  PATCH |
-  ##----------------------------------------------
-  ##"reserved" - used to extract "usr_acess [02:03]" 
-  ##"bits"     - convert "reserved" to binary
 
   puts "+--------------------------------------------------------+"
   puts "                     REVISION INFO                        " 
@@ -562,8 +551,7 @@ proc build_device_from_params {params} {
   clean_proj_if_needed $proj_dir
 
   set prj_dir [pwd]
-  puts "Project directory"
-  puts "-------------------"
+  puts "Project directory:"
   set prj_dir [file dirname $prj_dir]
   set prj_dir [file dirname $prj_dir]
 
@@ -650,7 +638,7 @@ proc build_device_from_params {params} {
   set_property "xelab.unifast" "" $obj
   
   set obj [get_filesets constrs_1]
-  set_property -name "target_part" -value "xazu7ev-fbvb900-1Q-q" -objects $obj
+  set_property -name "target_part" -value $part -objects $obj
 
 
   # #############################################################################
@@ -691,7 +679,7 @@ proc build_device_from_params {params} {
     set_property strategy $impl_strategy [get_runs impl_1]
     set_property flow "Vivado Implementation $vivado_year" [get_runs impl_1]
   }
-# -------------------------------
+
 set obj [get_runs impl_1]
 set_property set_report_strategy_name 1 $obj
 set_property report_strategy {Vivado Implementation Default Reports} $obj
@@ -745,10 +733,6 @@ set_property -name "steps.post_route_phys_opt_design.is_enabled" -value $post_ro
 set_property -name "steps.post_route_phys_opt_design.args.directive" -value $post_route_phys_opt_design_args_directive -objects $obj
 set_property -name "steps.write_bitstream.args.readback_file" -value $write_bitstream_args_readback_file -objects $obj
 set_property -name "steps.write_bitstream.args.verbose" -value $write_bitstream_args_verbose -objects $obj
-
-
-# -----------------------------------
-
 
   # set the current impl run
   current_run -implementation [get_runs impl_1]
