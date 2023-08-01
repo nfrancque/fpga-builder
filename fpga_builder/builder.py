@@ -176,7 +176,6 @@ def build_default(
             run_tcl = tcl_scripts[device]
             if run_dirs:
                 run_dir = run_dirs[device]
-                print("test b",run_dir)
             else:
                 run_dir = caller_dir() / "build" / device
             if tcl_arg_dict:
@@ -262,34 +261,16 @@ def set_bits(input, which_bits, val):
     return input
 
 def get_usr_access(args, design_versions, device):
-    PATCH_RANGE = (7, 0)
-    MAJOR_RANGE = (15, 8)
-    MINOR_RANGE = (23, 16)
-    PROD_PROTO  = 24
-    GOLDE_NORMAL = 25
-    RESERVED_RANGE = (31, 26)
-
 
     if design_versions:
         design_version = design_versions[device]
-        print("hello: 1")
         print(design_version)
     else:
         design_version = "0.0.0.0"
-        print("hello: 2")
         print(design_version)
     major, minor, patch, production_prototype = [int(field) for field in design_version.split(".")]
     normal_proto   =  format(0, '02x')
     normal_release =  format(1, '02x') 
-    golden_proto   =  format(2, '02x') 
-    golden_release =  format(3, '02x')
-        
-       
-    print ("normal_proto",   normal_proto)
-    print ("normal_release", normal_release)
-    print ("golden_proto",   golden_proto)
-    print ("golden_release", golden_release)
-    
     minor_hex   =  format(minor, '02x')
     major_hex   =  format(major, '02x') 
     patch_hex   =  format(patch, '02x') 
@@ -300,17 +281,12 @@ def get_usr_access(args, design_versions, device):
     print ("patch_hex", patch_hex) 
     
     design_version = "%s%s%s"%(major_hex,minor_hex,patch_hex)
-    print ("Design Version", design_version)
+    print ("Design version:", design_version)
     
     if  production_prototype == 1:
-       usr_access_value = "%s%s%s"%(design_version,normal_release,golden_release)
-       print ("usr_access_value :D",usr_access_value)
+       usr_access_value = "%s%s%s"%(design_version,normal_release)
     else:
-       usr_access_value = "%s%s%s"%(design_version,normal_proto,golden_proto)
-       print ("usr_access_value :D",usr_access_value)
-    
-    #is_golden = 1 if args.golden else 0
-    #is_release = 1 if args.release else 0
+       usr_access_value = "%s%s%s"%(design_version,normal_proto)
     usr_access = f"0x{usr_access_value}"
     print("usr_access:D", usr_access)
     return usr_access
