@@ -284,9 +284,9 @@ def get_usr_access(args, design_versions, device):
     print ("Design version:", design_version)
     
     if  production_prototype == 1:
-       usr_access_value = "%s%s%s"%(design_version,normal_release)
+       usr_access_value = "%s%s"%(design_version,normal_release)
     else:
-       usr_access_value = "%s%s%s"%(design_version,normal_proto)
+       usr_access_value = "%s%s"%(design_version,normal_proto)
     usr_access = f"0x{usr_access_value}"
     print("usr_access:D", usr_access)
     return usr_access
