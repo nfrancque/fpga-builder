@@ -46,6 +46,8 @@ import sys
 from pprint import pprint
 from os import environ
 import tarfile
+import platform
+
 
 from .utils import (
     warning,
@@ -303,7 +305,6 @@ def run_vivado(
     device_name=None,
     usr_access=0,
 ):
-    import platform
     """
     Runs vivado to run the build of the selected run directory
 

@@ -88,14 +88,6 @@ proc build {proj_name top_name proj_dir} {
   set output_dir [file normalize $proj_dir/../output]
 
   puts "usr_access value: $usr_access"
-  set design_version [string range "$usr_access" 2 7]
-  set normal         [string range "$usr_access" 8 9]
-  set golden         [string range "$usr_access" 10 11]
-  set regen_bit      [string range "$usr_access" 12 13] 
-  puts "normal: $normal"
-  puts "golden: $golden"
-  puts "design_version: $design_version"
-  puts "regen_bit: $regen_bit"
   
   configure_warnings_and_errors
 
@@ -228,29 +220,6 @@ proc build {proj_name top_name proj_dir} {
 
   set bitstream ${proj_dir}/${proj_name}.runs/impl_1/${top_name}.bit
   
-  set  usr_access_2 [get_property BITSTREAM.CONFIG.USR_ACCESS [current_design]]
-  set  usr_id     [get_property BITSTREAM.CONFIG.USERID [current_design]]
-  puts "USR_ACCESS: $usr_access_2"
-  puts "USR_ID    : $usr_id"
-  set  reserved   [string range "$usr_access_2" 0 1]
-  binary scan     [binary format H* $reserved] B* bits
-
-  puts "+--------------------------------------------------------+"
-  puts "                     REVISION INFO                        " 
-  puts "+--------------------------------------------------------+"
-  puts "+------------------+-------------------------------------+"
-  puts "PATCH VERSION (hex)| 0x[string range "$usr_access_2" 6 7]   "
-  puts "+------------------+-------------------------------------+"
-  puts "MINOR VERSION (hex)| 0x[string range "$usr_access_2" 4 5]   "
-  puts "+------------------+-------------------------------------+"
-  puts "MAJOR VERSION (hex)| 0x[string range "$usr_access_2" 2 3]   "
-  puts "+------------------+-------------------------------------+"
-  puts "PROD/PROTO BIT     | [string index "$bits" 7]             "    
-  puts "+------------------+-------------------------------------+"
-  puts "GOLDEN/NORMAL BIT  | [string index "$bits" 6]             "
-  puts "+------------------+-------------------------------------+"
-  puts "RESERVED BITS      | [string range "$bits" 0 5]           "
-  puts "+------------------+-------------------------------------+"
   # ------------------------------------------------------------------------------------- #
 
   global use_vitis
@@ -524,23 +493,17 @@ proc build_device_from_params {params} {
   set synth_strategy [dict get $params synth_strategy ]
   set impl_strategy [dict get $params impl_strategy ]
   set origin_dir [dict get $params origin_dir]
-  set auto_incremental_checkpoint [dict get $params auto_incremental_checkpoint]
-  set is_enabled [dict get $params is_enabled]
-  set max_paths [dict get $params max_paths]
   set use_power_opt [dict get $params use_power_opt]
   set use_post_route_phys_opt [dict get $params use_post_route_phys_opt]
   set target_language [dict get $params target_language]
-  set need_refresh [dict get $params need_refresh]
-  set opt_design_tcl_post [dict get $params opt_design_tcl_post]
-  set opt_design_args_directive [dict get $params opt_design_args_directive]
-  set place_design_args_directive [dict get $params place_design_args_directive]
-  set phys_opt_design_is_enabled [dict get $params phys_opt_design_is_enabled]
-  set phys_opt_design_args_directive [dict get $params phys_opt_design_args_directive]
-  set route_design_args_directive [dict get $params route_design_args_directive]
-  set post_route_phys_opt_design_is_enabled [dict get $params post_route_phys_opt_design_is_enabled]
-  set post_route_phys_opt_design_args_directive [dict get $params post_route_phys_opt_design_args_directive]
-  set write_bitstream_args_readback_file [dict get $params write_bitstream_args_readback_file]
-  set write_bitstream_args_verbose [dict get $params write_bitstream_args_verbose]
+  set opt_design_tcl_post [dict_get_default $params opt_design_tcl_post ""]
+  set opt_design_args_directive [dict_get_default $params opt_design_args_directive "Default"]
+  set place_design_args_directive [dict_get_default $params place_design_args_directive "Default"]
+  set phys_opt_design_is_enabled [dict_get_default $params phys_opt_design_is_enabled "1"]
+  set phys_opt_design_args_directive [dict_get_default $params phys_opt_design_args_directive "Default"]
+  set route_design_args_directive [dict_get_default $params route_design_args_directive "Default"]
+  set post_route_phys_opt_design_is_enabled [dict_get_default $params post_route_phys_opt_design_args_directive "0"]
+  set post_route_phys_opt_design_args_directive [dict_get_default $params post_route_phys_opt_design_args_directive "Default"]
   set make_wrapper [dict_get_default $params make_wrapper 0]
   set power_threshold [dict_get_default $params power_threshold 0]  
   set design_name_internal [dict_get_default $params design_name $top]
@@ -549,12 +512,6 @@ proc build_device_from_params {params} {
 
   set proj_dir [pwd]/$proj_name
   clean_proj_if_needed $proj_dir
-
-  set prj_dir [pwd]
-  puts "Project directory:"
-  set prj_dir [file dirname $prj_dir]
-  set prj_dir [file dirname $prj_dir]
-
 
   # Create project
   create_project $proj_name $proj_dir
@@ -666,7 +623,7 @@ proc build_device_from_params {params} {
   }
   
   set obj [get_runs synth_1]
-  set_property -name "auto_incremental_checkpoint" -value $auto_incremental_checkpoint -objects $obj
+  set_property -name "auto_incremental_checkpoint" -value "1" -objects $obj
   set_property -name "strategy" -value $synth_strategy -objects $obj
 
   # set the current synth run
@@ -689,8 +646,8 @@ set_property set_report_strategy_name 0 $obj
 create_report_config -report_name impl_init_report_timing_summary_0 -report_type report_timing_summary:1.0 -steps init_design -runs impl_1
 set obj [get_report_configs -of_objects [get_runs impl_1] impl_init_report_timing_summary_0]
 if { $obj != "" } {
-set_property -name "is_enabled" -value $is_enabled -objects $obj
-set_property -name "options.max_paths" -value $max_paths -objects $obj
+set_property -name "is_enabled" -value "0" -objects $obj
+set_property -name "options.max_paths" -value 10 -objects $obj
 
 }
 
@@ -701,7 +658,7 @@ create_report_config -report_name impl_route_report_route_status_0 -report_type 
 create_report_config -report_name impl_route_report_timing_summary_0 -report_type report_timing_summary:1.0 -steps route_design -runs impl_1
 set obj [get_report_configs -of_objects [get_runs impl_1] impl_route_report_timing_summary_0]
 if { $obj != "" } {
-set_property -name "options.max_paths" -value $max_paths -objects $obj
+set_property -name "options.max_paths" -value 10 -objects $obj
 
 }
 create_report_config -report_name impl_route_report_clock_utilization_0 -report_type report_clock_utilization:1.0 -steps route_design -runs impl_1
@@ -714,16 +671,18 @@ set_property -name "options.warn_on_violation" -value "1" -objects $obj
 create_report_config -report_name impl_post_route_phys_opt_report_timing_summary_0 -report_type report_timing_summary:1.0 -steps post_route_phys_opt_design -runs impl_1
 set obj [get_report_configs -of_objects [get_runs impl_1] impl_post_route_phys_opt_report_timing_summary_0]
 if { $obj != "" } {
-set_property -name "options.max_paths" -value $max_paths -objects $obj
+set_property -name "options.max_paths" -value 10 -objects $obj
 set_property -name "options.warn_on_violation" -value "1" -objects $obj
 
 }
 
 set obj [get_runs impl_1]
-set_property -name "needs_refresh" -value $need_refresh -objects $obj
+set_property -name "needs_refresh" -value "1" -objects $obj
 set_property -name "part" -value $part -objects $obj
 set_property -name "strategy" -value $impl_strategy -objects $obj
-set_property -name "steps.opt_design.tcl.post" -value $opt_design_tcl_post -objects $obj
+if { $opt_design_tcl_post != "" } {
+  set_property -name "steps.opt_design.tcl.post" -value $opt_design_tcl_post -objects $obj
+}
 set_property -name "steps.opt_design.args.directive" -value $opt_design_args_directive -objects $obj
 set_property -name "steps.place_design.args.directive" -value $place_design_args_directive -objects $obj
 set_property -name "steps.phys_opt_design.is_enabled" -value "1" -objects $obj
@@ -731,8 +690,8 @@ set_property -name "steps.phys_opt_design.args.directive" -value $phys_opt_desig
 set_property -name "steps.route_design.args.directive" -value $route_design_args_directive -objects $obj
 set_property -name "steps.post_route_phys_opt_design.is_enabled" -value $post_route_phys_opt_design_is_enabled -objects $obj
 set_property -name "steps.post_route_phys_opt_design.args.directive" -value $post_route_phys_opt_design_args_directive -objects $obj
-set_property -name "steps.write_bitstream.args.readback_file" -value $write_bitstream_args_readback_file -objects $obj
-set_property -name "steps.write_bitstream.args.verbose" -value $write_bitstream_args_verbose -objects $obj
+set_property -name "steps.write_bitstream.args.readback_file" -value "0" -objects $obj
+set_property -name "steps.write_bitstream.args.verbose" -value "0" -objects $obj
 
   # set the current impl run
   current_run -implementation [get_runs impl_1]

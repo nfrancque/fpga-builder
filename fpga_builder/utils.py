@@ -196,7 +196,6 @@ def caller_dir():
 
     """
     import platform
-    global dir1;
     # Use the second one up since calling this will invoke another stack frame
     frame = inspect.stack()[2]
     filename = frame[0].f_code.co_filename
