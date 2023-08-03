@@ -195,18 +195,10 @@ def caller_dir():
         A Path to the directory that called the function calling this one
 
     """
-    import platform
-
     # Use the second one up since calling this will invoke another stack frame
     frame = inspect.stack()[2]
     filename = frame[0].f_code.co_filename
-    platform_sys = platform.system()
-    dir_path = os.getcwd()
-    if platform_sys == "Linux":
-        return Path(filename).resolve().parent
-    elif platform_sys == "Windows":
-        return Path(dir_path)
-
+    return Path(filename).resolve().parent
 
 def repo_clean():
     """
