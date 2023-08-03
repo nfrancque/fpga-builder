@@ -94,7 +94,7 @@ def build_default(
     vivado_versions=None,
     other_files=None,
     and_tar=False,
-    design_versions=None
+    design_versions=None,
 ):
     """
     Parses arguments and runs the build on the selected device
@@ -193,7 +193,16 @@ def build_default(
                 # Workaround so doesn't always have to be next to it
                 print("Doing a filelist", other_files, caller_dir())
                 generate_filelist(caller_dir(), run_dir, other_files=other_files)
-            build(run_tcl, args, run_dir, tcl_args, vivado_version, and_tar, device, usr_access=usr_access)
+            build(
+                run_tcl,
+                args,
+                run_dir,
+                tcl_args,
+                vivado_version,
+                and_tar,
+                device,
+                usr_access=usr_access,
+            )
         if do_deploy:
             print(f"Deploying {device}...")
             # Deploy stuff
@@ -213,13 +222,23 @@ def build_default(
                 vivado_version=vivado_version,
             )
 
+
 def open_vivado_gui(project, vivado_version, run_dir):
     vivado_cmd = get_vivado_cmd(vivado_version)
     cmd = f"{vivado_cmd} {project}"
     run_cmd(cmd, blocking=False, cwd=run_dir)
 
 
-def build(run_tcl, args, run_dir=None, tcl_args=None, vivado_version=None, and_tar=False, device_name=None, usr_access=0):
+def build(
+    run_tcl,
+    args,
+    run_dir=None,
+    tcl_args=None,
+    vivado_version=None,
+    and_tar=False,
+    device_name=None,
+    usr_access=0,
+):
     """
     R the build on the selected device
 
@@ -246,13 +265,14 @@ def build(run_tcl, args, run_dir=None, tcl_args=None, vivado_version=None, and_t
     print(stats)
     success("Done!")
 
+
 def set_bits(input, which_bits, val):
     if type(which_bits) is not tuple:
         # Tuplify bits
         which_bits = (which_bits, which_bits)
     high, low = which_bits
     range_len = high - low + 1
-    range_max = 2**range_len-1
+    range_max = 2**range_len - 1
     if val > range_max:
         raise Exception(f"{val} is greater than {range_max}")
     for i in range(low, high):
@@ -262,37 +282,37 @@ def set_bits(input, which_bits, val):
     input |= val << low
     return input
 
-def get_usr_access(args, design_versions, device):
 
+def get_usr_access(args, design_versions, device):
     if design_versions:
         design_version = design_versions[device]
         print(design_version)
     else:
         design_version = "0.0.0.0"
         print(design_version)
-    major, minor, patch, production_prototype = [int(field) for field in design_version.split(".")]
-    normal_proto   =  format(0, '02x')
-    normal_release =  format(1, '02x') 
-    minor_hex   =  format(minor, '02x')
-    major_hex   =  format(major, '02x') 
-    patch_hex   =  format(patch, '02x') 
-     
-    
-    print ("major_hex", major_hex)
-    print ("minor_hex", minor_hex)
-    print ("patch_hex", patch_hex) 
-    
-    design_version = "%s%s%s"%(major_hex,minor_hex,patch_hex)
-    print ("Design version:", design_version)
-    
-    if  production_prototype == 1:
-       usr_access_value = "%s%s"%(design_version,normal_release)
+    major, minor, patch, production_prototype = [
+        int(field) for field in design_version.split(".")
+    ]
+    normal_proto = format(0, "02x")
+    normal_release = format(1, "02x")
+    minor_hex = format(minor, "02x")
+    major_hex = format(major, "02x")
+    patch_hex = format(patch, "02x")
+
+    print("major_hex", major_hex)
+    print("minor_hex", minor_hex)
+    print("patch_hex", patch_hex)
+
+    design_version = "%s%s%s" % (major_hex, minor_hex, patch_hex)
+    print("Design version:", design_version)
+
+    if production_prototype == 1:
+        usr_access_value = "%s%s" % (design_version, normal_release)
     else:
-       usr_access_value = "%s%s"%(design_version,normal_proto)
+        usr_access_value = "%s%s" % (design_version, normal_proto)
     usr_access = f"0x{usr_access_value}"
     print("usr_access:D", usr_access)
     return usr_access
-
 
 
 def run_vivado(
@@ -362,9 +382,9 @@ def run_vivado(
         args = [str(arg) for arg in tcl_args]
     # Defaults will be at the back so we can use these internally
     platform_sys = platform.system()
-    if (platform_sys == "Linux"):
+    if platform_sys == "Linux":
         script_path = Path(build_tcl).resolve()
-    elif (platform_sys == "Windows"):
+    elif platform_sys == "Windows":
         script_path_tcl = Path(build_tcl).resolve()
         script_driver_path = os.getcwd()
         script_tcl_name = os.path.basename(script_path_tcl)
@@ -393,7 +413,11 @@ def run_vivado(
         pin_txt = get_changeset_numbers()
         pin_file = output_dir / "pin.txt"
         pin_file.write_text(pin_txt)
-        branch = deployer.get_current_branch() if build_args.branch is None else build_args.branch
+        branch = (
+            deployer.get_current_branch()
+            if build_args.branch is None
+            else build_args.branch
+        )
         # Sad path noises
         branch = branch.replace("/", "|")
         tar_name = f"{get_app_name()}-{device_name}-{branch}.{deployer.get_current_commit_hash()[:8]}.tar.xz"
@@ -423,7 +447,7 @@ def get_submodule_commits():
 
 def get_changeset_numbers():
     os.chdir(deployer.get_git_root_directory())
-    ret = {get_app_name() : deployer.get_current_commit_hash()}
+    ret = {get_app_name(): deployer.get_current_commit_hash()}
     ret.update(get_submodule_commits())
     as_string = " ".join([f"{k} {v}" for k, v in ret.items()])
     return as_string
@@ -492,15 +516,16 @@ def get_stats_file(run_dir, num_threads):
     """
     import platform
     import os
+
     platform_sys = platform.system()
-    if (platform_sys == "Linux"):
-        run_directory = run_dir;
-    elif (platform_sys == "Windows"):
-        run_directory =  Path(run_dir)
+    if platform_sys == "Linux":
+        run_directory = run_dir
+    elif platform_sys == "Windows":
+        run_directory = Path(run_dir)
     hostname = socket.gethostname()
     os = sys.platform
     filename = f"stats_{hostname}_{os}_p{num_threads}.txt"
-    return (run_directory / "output" / filename)
+    return run_directory / "output" / filename
 
 
 def get_stats(run_dir, num_threads):
@@ -582,11 +607,7 @@ def get_parser(device_names):
 
 def _add_build_args(parser):
     group = parser.add_argument_group("build", "Build Arguments")
-    group.add_argument(
-        "--branch",
-        default=None,
-        help="Git branch"
-    )
+    group.add_argument("--branch", default=None, help="Git branch")
     group.add_argument(
         "-p",
         "--num-threads",
@@ -644,6 +665,7 @@ def _add_deploy_args(parser):
     group = deployer.setup_deploy_parser(group)
     return parser
 
+
 def get_other_files(from_dir, already_have=None, recursive=True, files_93=None):
     if not from_dir.exists():
         err(f"{from_dir} does not exist!")
@@ -662,13 +684,22 @@ def get_other_files(from_dir, already_have=None, recursive=True, files_93=None):
         if lib_name not in files:
             files[lib_name] = []
         files[lib_name].append(file_obj)
-    ret = {"vhdl" : files, "xdc" : []}
+    ret = {"vhdl": files, "xdc": []}
     return ret
 
 
 def build_block(
-    blk_dir, top_level=None, constraints=None, other_files=None, device=None, generics=None, vivado_version=None,
-    board=None, bd_file=None, top=None, ip_repo=None
+    blk_dir,
+    top_level=None,
+    constraints=None,
+    other_files=None,
+    device=None,
+    generics=None,
+    vivado_version=None,
+    board=None,
+    bd_file=None,
+    top=None,
+    ip_repo=None,
 ):
     """
     Runs a build for a block with a manifest
@@ -728,4 +759,6 @@ def build_block(
     args = parser.parse_args()
     # Don't generate a bitstream since this is just for checking stuff
     args.impl_only = True
-    build(BUILD_BLK_TCL_SCRIPT, args, build_dir, tcl_args, vivado_version=vivado_version)
+    build(
+        BUILD_BLK_TCL_SCRIPT, args, build_dir, tcl_args, vivado_version=vivado_version
+    )

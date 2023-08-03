@@ -75,7 +75,7 @@ def run_cmd(cmd, cwd=None, silent=False, line_handler=None, blocking=True):
     Returns:
         None
     """
-    
+
     if not cwd:
         cwd = Path.cwd()
 
@@ -196,16 +196,16 @@ def caller_dir():
 
     """
     import platform
+
     # Use the second one up since calling this will invoke another stack frame
     frame = inspect.stack()[2]
     filename = frame[0].f_code.co_filename
     platform_sys = platform.system()
     dir_path = os.getcwd()
-    if (platform_sys == "Linux"):
+    if platform_sys == "Linux":
         return Path(filename).resolve().parent
-    elif (platform_sys == "Windows"):
+    elif platform_sys == "Windows":
         return Path(dir_path)
-
 
 
 def repo_clean():
@@ -220,7 +220,9 @@ def repo_clean():
 
     """
     cmd = f"git status --porcelain"
-    output = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, shell=True).stdout
+    output = subprocess.run(
+        cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, shell=True
+    ).stdout
     if output:
         output = cmd + "\n" + output.decode("utf-8")
         # This git command should be empty if everything is good to go
