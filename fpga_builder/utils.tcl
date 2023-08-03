@@ -196,8 +196,8 @@ proc build {proj_name top_name proj_dir} {
   }
 
   ## Set access bits 
-  #set_property BITSTREAM.CONFIG.USR_ACCESS $normal$design_version [current_design]
-  #set_property BITSTREAM.CONFIG.USERID     $normal$design_version [current_design]
+  #set_property BITSTREAM.CONFIG.USR_ACCESS $usr_access [current_design]
+  #set_property BITSTREAM.CONFIG.USERID     $usr_access [current_design]
 
   set report_time [expr [clock seconds] - $start]
   
