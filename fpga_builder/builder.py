@@ -297,19 +297,14 @@ def get_usr_access(args, design_versions, device):
     major_hex = format(major, "02x")
     patch_hex = format(patch, "02x")
 
-    print("major_hex", major_hex)
-    print("minor_hex", minor_hex)
-    print("patch_hex", patch_hex)
-
     design_version = "%s%s%s" % (major_hex, minor_hex, patch_hex)
-    print("Design version:", design_version)
 
     if production_prototype == 1:
-        usr_access_value = "%s%s" % (design_version, normal_release)
+        usr_access_value = "%s%s" % (normal_release, design_version)
     else:
-        usr_access_value = "%s%s" % (design_version, normal_proto)
+        usr_access_value = "%s%s" % (normal_proto, design_version)
     usr_access = f"0x{usr_access_value}"
-    print("usr_access:D", usr_access)
+    print("USR_ACCESS:", usr_access)
     return usr_access
 
 
