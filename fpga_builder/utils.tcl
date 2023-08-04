@@ -213,8 +213,8 @@ proc build {proj_name top_name proj_dir} {
   puts "Exporting files..."
   set start [clock seconds]
 
-  set_property BITSTREAM.CONFIG.USR_ACCESS $normal$design_version [current_design]
-  set_property BITSTREAM.CONFIG.USERID     $normal$design_version [current_design]
+  set_property BITSTREAM.CONFIG.USR_ACCESS $usr_access [current_design]
+  set_property BITSTREAM.CONFIG.USERID     $usr_access [current_design]
   
   write_bitstream -verbose -force "${proj_dir}/${proj_name}.runs/impl_1/${top_name}.bit"
 
