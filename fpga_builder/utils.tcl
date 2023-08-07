@@ -87,6 +87,8 @@ proc build {proj_name top_name proj_dir} {
 
   set output_dir [file normalize $proj_dir/../output]
 
+  puts "usr_access value: $usr_access"
+  
   configure_warnings_and_errors
 
   # If anything happened before now, that was setup (BD generation etc)
@@ -103,6 +105,12 @@ proc build {proj_name top_name proj_dir} {
   # Synth
   set start [clock seconds]
   launch_runs -jobs $max_threads -verbose synth_1
+  #set synthesis options
+  set obj [get_runs synth_1]
+  set_property set_report_strategy_name 1 $obj
+  set_property report_strategy {Vivado Synthesis Default Reports} $obj
+  set_property set_report_strategy_name 0 $obj
+
   wait_on_run synth_1
   if {[get_property PROGRESS [get_runs synth_1]] != "100%"} {
     set failed_runs [get_runs -filter {IS_SYNTHESIS && PROGRESS < 100}]
@@ -187,9 +195,9 @@ proc build {proj_name top_name proj_dir} {
     puts "Total power is $total_power W"
   }
 
-  # Set access bits 
-  set_property BITSTREAM.CONFIG.USR_ACCESS $usr_access [current_design]
-  set_property BITSTREAM.CONFIG.USERID     $usr_access [current_design]
+  ## Set access bits 
+  #set_property BITSTREAM.CONFIG.USR_ACCESS $usr_access [current_design]
+  #set_property BITSTREAM.CONFIG.USERID     $usr_access [current_design]
 
   set report_time [expr [clock seconds] - $start]
   
@@ -204,8 +212,16 @@ proc build {proj_name top_name proj_dir} {
   # Export
   puts "Exporting files..."
   set start [clock seconds]
+
+  set_property BITSTREAM.CONFIG.USR_ACCESS $usr_access [current_design]
+  set_property BITSTREAM.CONFIG.USERID     $usr_access [current_design]
   
+  write_bitstream -verbose -force "${proj_dir}/${proj_name}.runs/impl_1/${top_name}.bit"
+
   set bitstream ${proj_dir}/${proj_name}.runs/impl_1/${top_name}.bit
+  
+  # ------------------------------------------------------------------------------------- #
+
   global use_vitis
   if {[file exists $bitstream]} {
     file copy -force $bitstream $output_dir/
@@ -353,7 +369,7 @@ proc build_block { filelist build_dir device generics {board 0} {bd_file 0} {top
   add_files_from_filelist $filelist
 
   # Settings
-  set_property target_language VHDL [current_project]
+  # set_property target_language VHDL [current_project]
   set_property top $top_name [current_fileset]
   set_property "xpm_libraries" "XPM_CDC XPM_FIFO XPM_MEMORY" [current_project]
   set_property STEPS.SYNTH_DESIGN.ARGS.FLATTEN_HIERARCHY none [get_runs synth_1]
@@ -477,10 +493,18 @@ proc build_device_from_params {params} {
   set synth_strategy [dict get $params synth_strategy ]
   set impl_strategy [dict get $params impl_strategy ]
   set origin_dir [dict get $params origin_dir]
-  set use_power_opt [dict_get_default $params use_power_opt 1]
-  set use_post_route_phys_opt [dict_get_default $params use_post_route_phys_opt 1]
+  set use_power_opt [dict get $params use_power_opt]
+  set use_post_route_phys_opt [dict get $params use_post_route_phys_opt]
+  set target_language [dict get $params target_language]
+  set opt_design_tcl_post [dict_get_default $params opt_design_tcl_post ""]
+  set opt_design_args_directive [dict_get_default $params opt_design_args_directive "Default"]
+  set place_design_args_directive [dict_get_default $params place_design_args_directive "Default"]
+  set phys_opt_design_is_enabled [dict_get_default $params phys_opt_design_is_enabled "1"]
+  set phys_opt_design_args_directive [dict_get_default $params phys_opt_design_args_directive "Default"]
+  set route_design_args_directive [dict_get_default $params route_design_args_directive "Default"]
+  set post_route_phys_opt_design_is_enabled [dict_get_default $params post_route_phys_opt_design_args_directive "0"]
+  set post_route_phys_opt_design_args_directive [dict_get_default $params post_route_phys_opt_design_args_directive "Default"]
   set make_wrapper [dict_get_default $params make_wrapper 0]
-  set target_language [dict_get_default $params target_language VHDL]
   set power_threshold [dict_get_default $params power_threshold 0]  
   set design_name_internal [dict_get_default $params design_name $top]
 
@@ -499,13 +523,13 @@ proc build_device_from_params {params} {
 
   # Set project properties
   set obj [get_projects $proj_name]
-  set_property "default_lib" "xil_defaultlib" $obj
+  set_property "default_lib" -value "xil_defaultlib" -objects $obj 
+  set_property -name "ip.user_files_dir" -value "$proj_dir/$proj_name.ip_user_files" -object $obj
   set_property -name "ip_cache_permissions" -value "read write" -objects $obj
   set_property -name "ip_output_repo" -value "$proj_dir/$proj_name.cache/ip" -objects $obj
-  set_property "part" "$part" $obj
+  set_property -name "part" -value $part -objects $obj
   set_property "sim.ip.auto_export_scripts" "1" $obj
   set_property -name "ip_interface_inference_priority" -value "" -objects $obj
-  set_property "simulator_language" "Mixed" $obj
   set_property "target_language" "$target_language" $obj
   set_property -name "enable_vhdl_2008" -value "1" -objects $obj
   set_property -name "xpm_libraries" -value "XPM_CDC XPM_FIFO XPM_MEMORY" -objects $obj
@@ -569,40 +593,105 @@ proc build_device_from_params {params} {
   set_property "top" $top $obj
   set_property "xelab.nosort" "1" $obj
   set_property "xelab.unifast" "" $obj
+  
+  set obj [get_filesets constrs_1]
+  set_property -name "target_part" -value $part -objects $obj
+
 
   # #############################################################################
   # Synthesis and implementation
   # #############################################################################
   # Create 'synth_1' run (if not found)
   if {[string equal [get_runs -quiet synth_1] ""]} {
-    create_run -name synth_1 -part $part -flow {Vivado Synthesis $vivado_year} -strategy $synth_strategy -constrset constrs_1
+    create_run -name synth_1 -part $part -flow {Vivado Synthesis $vivado_year} -strategy "Vivado Synthesis Defaults" -report_strategy {No Reports} -constrset constrs_1
   } else {
     set_property strategy $synth_strategy [get_runs synth_1]
     set_property flow "Vivado Synthesis $vivado_year" [get_runs synth_1]
   }
   set obj [get_runs synth_1]
-  set_property "needs_refresh" "1" $obj
-  set_property "part" "$part" $obj
+  set_property set_report_strategy_name 1 $obj
+  set_property report_strategy {Vivado Synthesis Default Reports} $obj
+  set_property set_report_strategy_name 0 $obj
+
+  # Create 'synth_1_synth_report_utilization_0' report (if not found)
+  if { [ string equal [get_report_configs -of_objects [get_runs synth_1] synth_1_synth_report_utilization_0] "" ] } {
+    create_report_config -report_name synth_1_synth_report_utilization_0 -report_type report_utilization:1.0 -steps synth_design -runs synth_1
+  }
+  set obj [get_report_configs -of_objects [get_runs synth_1] synth_1_synth_report_utilization_0]
+  if { $obj != "" } {
+
+  }
+  
+  set obj [get_runs synth_1]
+  set_property -name "auto_incremental_checkpoint" -value "1" -objects $obj
+  set_property -name "strategy" -value $synth_strategy -objects $obj
 
   # set the current synth run
   current_run -synthesis [get_runs synth_1]
 
   # Create 'impl_1' run (if not found)
   if {[string equal [get_runs -quiet impl_1] ""]} {
-    create_run -name impl_1 -part $part -flow {Vivado Implementation $vivado_year} -strategy $impl_strategy -constrset constrs_1 -parent_run synth_1
+    create_run -name impl_1 -part $part -flow {Vivado Implementation $vivado_year} -strategy "Vivado Implementation Defaults" -report_strategy {No Reports} -constrset constrs_1 -parent_run synth_1
   } else {
     set_property strategy $impl_strategy [get_runs impl_1]
     set_property flow "Vivado Implementation $vivado_year" [get_runs impl_1]
   }
-  set obj [get_runs impl_1]
-  set_property "needs_refresh" "1" $obj
-  set_property "part" "$part" $obj
-  set_property -name "steps.power_opt_design.is_enabled" -value "$use_power_opt" -objects $obj
-  set_property -name "steps.post_place_power_opt_design.is_enabled" -value "$use_power_opt" -objects $obj
-  set_property -name "steps.post_route_phys_opt_design.is_enabled" -value "$use_post_route_phys_opt" -objects $obj
-  set_property -name "steps.post_route_phys_opt_design.args.directive" -value "AggressiveExplore" -objects $obj
-  set_property "steps.write_bitstream.args.readback_file" "0" $obj
-  set_property "steps.write_bitstream.args.verbose" "0" $obj
+
+set obj [get_runs impl_1]
+set_property set_report_strategy_name 1 $obj
+set_property report_strategy {Vivado Implementation Default Reports} $obj
+set_property set_report_strategy_name 0 $obj
+
+# create implementation reports
+create_report_config -report_name impl_init_report_timing_summary_0 -report_type report_timing_summary:1.0 -steps init_design -runs impl_1
+set obj [get_report_configs -of_objects [get_runs impl_1] impl_init_report_timing_summary_0]
+if { $obj != "" } {
+set_property -name "is_enabled" -value "0" -objects $obj
+set_property -name "options.max_paths" -value 10 -objects $obj
+
+}
+
+create_report_config -report_name impl_route_report_drc_0 -report_type report_drc:1.0 -steps route_design -runs impl_1
+create_report_config -report_name impl_route_report_methodology_0 -report_type report_methodology:1.0 -steps route_design -runs impl_1
+create_report_config -report_name impl_route_report_power_0 -report_type report_power:1.0 -steps route_design -runs impl_1
+create_report_config -report_name impl_route_report_route_status_0 -report_type report_route_status:1.0 -steps route_design -runs impl_1
+create_report_config -report_name impl_route_report_timing_summary_0 -report_type report_timing_summary:1.0 -steps route_design -runs impl_1
+set obj [get_report_configs -of_objects [get_runs impl_1] impl_route_report_timing_summary_0]
+if { $obj != "" } {
+set_property -name "options.max_paths" -value 10 -objects $obj
+
+}
+create_report_config -report_name impl_route_report_clock_utilization_0 -report_type report_clock_utilization:1.0 -steps route_design -runs impl_1
+create_report_config -report_name impl_route_report_bus_skew_0 -report_type report_bus_skew:1.1 -steps route_design -runs impl_1
+set obj [get_report_configs -of_objects [get_runs impl_1] impl_route_report_bus_skew_0]
+if { $obj != "" } {
+set_property -name "options.warn_on_violation" -value "1" -objects $obj
+
+}
+create_report_config -report_name impl_post_route_phys_opt_report_timing_summary_0 -report_type report_timing_summary:1.0 -steps post_route_phys_opt_design -runs impl_1
+set obj [get_report_configs -of_objects [get_runs impl_1] impl_post_route_phys_opt_report_timing_summary_0]
+if { $obj != "" } {
+set_property -name "options.max_paths" -value 10 -objects $obj
+set_property -name "options.warn_on_violation" -value "1" -objects $obj
+
+}
+
+set obj [get_runs impl_1]
+set_property -name "needs_refresh" -value "1" -objects $obj
+set_property -name "part" -value $part -objects $obj
+set_property -name "strategy" -value $impl_strategy -objects $obj
+if { $opt_design_tcl_post != "" } {
+  set_property -name "steps.opt_design.tcl.post" -value $opt_design_tcl_post -objects $obj
+}
+set_property -name "steps.opt_design.args.directive" -value $opt_design_args_directive -objects $obj
+set_property -name "steps.place_design.args.directive" -value $place_design_args_directive -objects $obj
+set_property -name "steps.phys_opt_design.is_enabled" -value "1" -objects $obj
+set_property -name "steps.phys_opt_design.args.directive" -value $phys_opt_design_args_directive -objects $obj
+set_property -name "steps.route_design.args.directive" -value $route_design_args_directive -objects $obj
+set_property -name "steps.post_route_phys_opt_design.is_enabled" -value $post_route_phys_opt_design_is_enabled -objects $obj
+set_property -name "steps.post_route_phys_opt_design.args.directive" -value $post_route_phys_opt_design_args_directive -objects $obj
+set_property -name "steps.write_bitstream.args.readback_file" -value "0" -objects $obj
+set_property -name "steps.write_bitstream.args.verbose" -value "0" -objects $obj
 
   # set the current impl run
   current_run -implementation [get_runs impl_1]
@@ -672,4 +761,5 @@ proc configure_warnings_and_errors {} {
 
   # Reclassify 8-3332 as an info message.  These are primarily created by the synthesis tool
   set_msg_config -id {[Synth 8-3332]} -new_severity INFO
+
 }

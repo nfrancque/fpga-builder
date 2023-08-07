@@ -46,6 +46,7 @@ import sys
 from pprint import pprint
 from os import environ
 import tarfile
+
 from .utils import (
     warning,
     err,
@@ -91,7 +92,7 @@ def build_default(
     vivado_versions=None,
     other_files=None,
     and_tar=False,
-    design_versions=None
+    design_versions=None,
 ):
     """
     Parses arguments and runs the build on the selected device
@@ -190,8 +191,16 @@ def build_default(
                 # Workaround so doesn't always have to be next to it
                 print("Doing a filelist", other_files, caller_dir())
                 generate_filelist(caller_dir(), run_dir, other_files=other_files)
-            
-            build(run_tcl, args, run_dir, tcl_args, vivado_version, and_tar, device, usr_access=usr_access)
+            build(
+                run_tcl,
+                args,
+                run_dir,
+                tcl_args,
+                vivado_version,
+                and_tar,
+                device,
+                usr_access=usr_access,
+            )
         if do_deploy:
             print(f"Deploying {device}...")
             # Deploy stuff
@@ -211,13 +220,23 @@ def build_default(
                 vivado_version=vivado_version,
             )
 
+
 def open_vivado_gui(project, vivado_version, run_dir):
     vivado_cmd = get_vivado_cmd(vivado_version)
     cmd = f"{vivado_cmd} {project}"
     run_cmd(cmd, blocking=False, cwd=run_dir)
 
 
-def build(run_tcl, args, run_dir=None, tcl_args=None, vivado_version=None, and_tar=False, device_name=None, usr_access=0):
+def build(
+    run_tcl,
+    args,
+    run_dir=None,
+    tcl_args=None,
+    vivado_version=None,
+    and_tar=False,
+    device_name=None,
+    usr_access=0,
+):
     """
     R the build on the selected device
 
@@ -244,13 +263,14 @@ def build(run_tcl, args, run_dir=None, tcl_args=None, vivado_version=None, and_t
     print(stats)
     success("Done!")
 
+
 def set_bits(input, which_bits, val):
     if type(which_bits) is not tuple:
         # Tuplify bits
         which_bits = (which_bits, which_bits)
     high, low = which_bits
     range_len = high - low + 1
-    range_max = 2**range_len-1
+    range_max = 2**range_len - 1
     if val > range_max:
         raise Exception(f"{val} is greater than {range_max}")
     for i in range(low, high):
@@ -260,32 +280,32 @@ def set_bits(input, which_bits, val):
     input |= val << low
     return input
 
+
 def get_usr_access(args, design_versions, device):
-    PATCH_RANGE = (7, 0)
-    MINOR_RANGE = (15, 8)
-    MAJOR_RANGE = (23, 16)
-    GOLDEN_IDX = 24
-    RELEASE_IDX = 25
-    RESERVED_RANGE = (31, 26)
-
-
     if design_versions:
         design_version = design_versions[device]
+        print(design_version)
     else:
-        design_version = "0.0.0"
-    print(design_version)
-    major, minor, patch = [int(field) for field in design_version.split(".")]
-    is_golden = 1 if args.golden else 0
-    is_release = 1 if args.release else 0
-    usr_access = 0
-    usr_access = set_bits(usr_access, PATCH_RANGE, patch)
-    usr_access = set_bits(usr_access, MINOR_RANGE, minor)
-    usr_access = set_bits(usr_access, MAJOR_RANGE, major)
-    usr_access = set_bits(usr_access, GOLDEN_IDX, is_golden)
-    usr_access = set_bits(usr_access, RELEASE_IDX, is_release)
-    usr_access = set_bits(usr_access, RESERVED_RANGE, 0)
-    return usr_access
+        design_version = "0.0.0.0"
+        print(design_version)
+    major, minor, patch, production_prototype = [
+        int(field) for field in design_version.split(".")
+    ]
+    normal_proto = format(0, "02x")
+    normal_release = format(1, "02x")
+    minor_hex = format(minor, "02x")
+    major_hex = format(major, "02x")
+    patch_hex = format(patch, "02x")
 
+    design_version = "%s%s%s" % (major_hex, minor_hex, patch_hex)
+
+    if production_prototype == 1:
+        usr_access_value = "%s%s" % (normal_release, design_version)
+    else:
+        usr_access_value = "%s%s" % (normal_proto, design_version)
+    usr_access = f"0x{usr_access_value}"
+    print("USR_ACCESS:", usr_access)
+    return usr_access
 
 
 def run_vivado(
@@ -321,7 +341,6 @@ def run_vivado(
     if version is None:
         version = "2019.1"
     vivado_cmd = get_vivado_cmd(version)
-    script_path = Path(build_tcl).resolve()
     stats_file = get_stats_file(run_dir, build_args.num_threads)
     output_dir = run_dir / "output"
     if output_dir.exists():
@@ -355,9 +374,10 @@ def run_vivado(
         # User args go at front if provided
         args = [str(arg) for arg in tcl_args]
     # Defaults will be at the back so we can use these internally
+    script_path = Path(build_tcl).resolve()
     args.extend(default_args)
     arg_string = " ".join('"' + item + '"' for item in args)
-    cmd_string = f"{vivado_cmd} -mode batch -log '{log}' -nojournal -source '{script_path}' -tclargs {arg_string}"
+    cmd_string = f"{vivado_cmd} -mode batch -notrace -log '{log}' -nojournal -source '{script_path}' -tclargs {arg_string}"
     if not run_dir.exists():
         run_dir.mkdir(parents=True)
     print("Running:", cmd_string)
@@ -379,7 +399,11 @@ def run_vivado(
         pin_txt = get_changeset_numbers()
         pin_file = output_dir / "pin.txt"
         pin_file.write_text(pin_txt)
-        branch = deployer.get_current_branch() if build_args.branch is None else build_args.branch
+        branch = (
+            deployer.get_current_branch()
+            if build_args.branch is None
+            else build_args.branch
+        )
         # Sad path noises
         branch = branch.replace("/", "|")
         tar_name = f"{get_app_name()}-{device_name}-{branch}.{deployer.get_current_commit_hash()[:8]}.tar.xz"
@@ -409,7 +433,7 @@ def get_submodule_commits():
 
 def get_changeset_numbers():
     os.chdir(deployer.get_git_root_directory())
-    ret = {get_app_name() : deployer.get_current_commit_hash()}
+    ret = {get_app_name(): deployer.get_current_commit_hash()}
     ret.update(get_submodule_commits())
     as_string = " ".join([f"{k} {v}" for k, v in ret.items()])
     return as_string
@@ -476,10 +500,14 @@ def get_stats_file(run_dir, num_threads):
         A unique path to a text file that can be populated with stats about the build
 
     """
+    import platform
+    import os
+    run_directory = run_dir
+
     hostname = socket.gethostname()
     os = sys.platform
     filename = f"stats_{hostname}_{os}_p{num_threads}.txt"
-    return (run_dir / "output" / filename).resolve()
+    return run_directory / "output" / filename
 
 
 def get_stats(run_dir, num_threads):
@@ -561,11 +589,7 @@ def get_parser(device_names):
 
 def _add_build_args(parser):
     group = parser.add_argument_group("build", "Build Arguments")
-    group.add_argument(
-        "--branch",
-        default=None,
-        help="Git branch"
-    )
+    group.add_argument("--branch", default=None, help="Git branch")
     group.add_argument(
         "-p",
         "--num-threads",
@@ -623,6 +647,7 @@ def _add_deploy_args(parser):
     group = deployer.setup_deploy_parser(group)
     return parser
 
+
 def get_other_files(from_dir, already_have=None, recursive=True, files_93=None):
     if not from_dir.exists():
         err(f"{from_dir} does not exist!")
@@ -641,13 +666,22 @@ def get_other_files(from_dir, already_have=None, recursive=True, files_93=None):
         if lib_name not in files:
             files[lib_name] = []
         files[lib_name].append(file_obj)
-    ret = {"vhdl" : files, "xdc" : []}
+    ret = {"vhdl": files, "xdc": []}
     return ret
 
 
 def build_block(
-    blk_dir, top_level=None, constraints=None, other_files=None, device=None, generics=None, vivado_version=None,
-    board=None, bd_file=None, top=None, ip_repo=None
+    blk_dir,
+    top_level=None,
+    constraints=None,
+    other_files=None,
+    device=None,
+    generics=None,
+    vivado_version=None,
+    board=None,
+    bd_file=None,
+    top=None,
+    ip_repo=None,
 ):
     """
     Runs a build for a block with a manifest
@@ -707,4 +741,6 @@ def build_block(
     args = parser.parse_args()
     # Don't generate a bitstream since this is just for checking stuff
     args.impl_only = True
-    build(BUILD_BLK_TCL_SCRIPT, args, build_dir, tcl_args, vivado_version=vivado_version)
+    build(
+        BUILD_BLK_TCL_SCRIPT, args, build_dir, tcl_args, vivado_version=vivado_version
+    )
