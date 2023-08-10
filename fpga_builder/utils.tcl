@@ -495,7 +495,7 @@ proc build_device_from_params {params} {
   set origin_dir [dict get $params origin_dir]
   set use_power_opt [dict get $params use_power_opt]
   set use_post_route_phys_opt [dict get $params use_post_route_phys_opt]
-  set target_language [dict get $params target_language]
+  set target_language [dict_get_default $params target_language "vhdl"]
   set opt_design_tcl_post [dict_get_default $params opt_design_tcl_post ""]
   set opt_design_args_directive [dict_get_default $params opt_design_args_directive "Default"]
   set place_design_args_directive [dict_get_default $params place_design_args_directive "Default"]
