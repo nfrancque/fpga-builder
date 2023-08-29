@@ -222,8 +222,8 @@ def build_default(
 
 
 def open_vivado_gui(project, vivado_version, run_dir):
-    vivado_cmd = "LD_PRELOAD=/lib/x86_64-linux-gnu/libudev.so.1 " + get_vivado_cmd(vivado_version)
-    cmd = f"{vivado_cmd} {project}"
+    vivado_cmd = get_vivado_cmd(vivado_version)
+    cmd = f"LD_PRELOAD=/lib/x86_64-linux-gnu/libudev.so.1 {vivado_cmd} {project}"
     run_cmd(cmd, blocking=False, cwd=run_dir)
 
 
@@ -340,7 +340,7 @@ def run_vivado(
     """
     if version is None:
         version = "2019.1"
-    vivado_cmd = "LD_PRELOAD=/lib/x86_64-linux-gnu/libudev.so.1 " + get_vivado_cmd(version)
+    vivado_cmd = get_vivado_cmd(version)
     stats_file = get_stats_file(run_dir, build_args.num_threads)
     output_dir = run_dir / "output"
     if output_dir.exists():
@@ -377,7 +377,7 @@ def run_vivado(
     script_path = Path(build_tcl).resolve()
     args.extend(default_args)
     arg_string = " ".join('"' + item + '"' for item in args)
-    cmd_string = f"{vivado_cmd} -mode batch -notrace -log '{log}' -nojournal -source '{script_path}' -tclargs {arg_string}"
+    cmd_string = f"LD_PRELOAD=/lib/x86_64-linux-gnu/libudev.so.1 {vivado_cmd} -mode batch -notrace -log '{log}' -nojournal -source '{script_path}' -tclargs {arg_string}"
     if not run_dir.exists():
         run_dir.mkdir(parents=True)
     print("Running:", cmd_string)
