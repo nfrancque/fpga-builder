@@ -222,7 +222,7 @@ def build_default(
 
 
 def open_vivado_gui(project, vivado_version, run_dir):
-    vivado_cmd = get_vivado_cmd(vivado_version)
+    vivado_cmd = "LD_PRELOAD=/lib/x86_64-linux-gnu/libudev.so.1 " + get_vivado_cmd(vivado_version)
     cmd = f"{vivado_cmd} {project}"
     run_cmd(cmd, blocking=False, cwd=run_dir)
 
@@ -340,7 +340,7 @@ def run_vivado(
     """
     if version is None:
         version = "2019.1"
-    vivado_cmd = get_vivado_cmd(version)
+    vivado_cmd = "LD_PRELOAD=/lib/x86_64-linux-gnu/libudev.so.1 " + get_vivado_cmd(version)
     stats_file = get_stats_file(run_dir, build_args.num_threads)
     output_dir = run_dir / "output"
     if output_dir.exists():
