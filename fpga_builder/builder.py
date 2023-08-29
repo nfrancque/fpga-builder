@@ -357,6 +357,7 @@ def run_vivado(
     force_arg = 1 if build_args.force else 0
     use_vitis_arg = check_vitis(version)
     tcl_utils = THIS_DIR / "utils.tcl"
+    environ["LD_PRELOAD"] = "/lib/x86_64-linux-gnu/libudev.so.1"
     default_args = [
         tcl_utils,
         stats_file,
