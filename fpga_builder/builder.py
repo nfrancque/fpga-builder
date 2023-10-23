@@ -191,6 +191,11 @@ def build_default(
                 # Workaround so doesn't always have to be next to it
                 print("Doing a filelist", other_files, caller_dir())
                 generate_filelist(caller_dir(), run_dir, other_files=other_files)
+            if design_versions:
+                design_version = design_versions[device]
+                print(design_version)
+            else:
+                design_version = "0.0.0.0"
             build(
                 run_tcl,
                 args,
@@ -200,9 +205,8 @@ def build_default(
                 and_tar,
                 device,
                 usr_access=usr_access,
+                design_version=design_version
             )
-        version_file = run_dir / "version.txt"
-        version_file.write_text(design_versions[device] + "\n")
         if do_deploy:
             print(f"Deploying {device}...")
             # Deploy stuff
@@ -238,6 +242,7 @@ def build(
     and_tar=False,
     device_name=None,
     usr_access=0,
+    design_version="0.0.0.0"
 ):
     """
     R the build on the selected device
@@ -260,6 +265,7 @@ def build(
         and_tar,
         device_name,
         usr_access,
+        design_version
     )
     stats = get_stats(run_dir, args.num_threads)
     print(stats)
@@ -319,6 +325,7 @@ def run_vivado(
     and_tar=False,
     device_name=None,
     usr_access=0,
+    design_version="0.0.0.0"
 ):
     """
     Runs vivado to run the build of the selected run directory
@@ -345,13 +352,16 @@ def run_vivado(
     vivado_cmd = get_vivado_cmd(version)
     stats_file = get_stats_file(run_dir, build_args.num_threads)
     output_dir = run_dir / "output"
-    if output_dir.exists():
+    if run_dir.exists():
         if not build_args.force:
-            err(f"{output_dir} already exists, provide --force to delete")
+            err(f"{run_dir} already exists, provide --force to delete")
             exit(1)
-        shutil.rmtree(output_dir)
+        shutil.rmtree(run_dir)
     output_dir.mkdir(parents=True)
     log = output_dir / "vivado.log"
+    version_file = output_dir / "version.txt"
+
+    version_file.write_text(design_version + "\n")
     stats_file = str(stats_file.as_posix())
     bd_only_arg = 1 if build_args.bd_only else 0
     synth_only_arg = 1 if build_args.synth_only else 0
