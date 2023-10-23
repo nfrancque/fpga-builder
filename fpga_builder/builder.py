@@ -201,6 +201,8 @@ def build_default(
                 device,
                 usr_access=usr_access,
             )
+        version_file = run_dir / "version.txt"
+        version_file.write_text(design_versions[device] + "\n")
         if do_deploy:
             print(f"Deploying {device}...")
             # Deploy stuff
