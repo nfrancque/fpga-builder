@@ -70,7 +70,7 @@ set lut_util 0
 set ram_util 0
 set total_power 0
 
-proc build {proj_name top_name proj_dir} {
+proc build {proj_name top_name proj_dir reports} {
   global synth_time
   global total_start
   global impl_time
@@ -88,6 +88,7 @@ proc build {proj_name top_name proj_dir} {
   set output_dir [file normalize $proj_dir/../output]
 
   puts "usr_access value: $usr_access"
+  set bd_name [string range "$top_name" 0 9]
   
   configure_warnings_and_errors
 
@@ -221,6 +222,7 @@ proc build {proj_name top_name proj_dir} {
   set bitstream ${proj_dir}/${proj_name}.runs/impl_1/${top_name}.bit
   
   # ------------------------------------------------------------------------------------- #
+  file copy -force "${proj_dir}/${proj_name}.gen/sources_1/bd/${bd_name}bd/${reports}" "./${output_dir}/arch.json"
 
   global use_vitis
   if {[file exists $bitstream]} {
@@ -296,9 +298,9 @@ proc report_stats {} {
   close $stats_chan
 }
 
-proc build_device {proj_name top proj_dir bd_files design_name_internal make_wrapper} {
+proc build_device {proj_name top proj_dir bd_files design_name_internal make_wrapper reports} {
   source_bd_files $bd_files $top $design_name_internal $make_wrapper
-  build $proj_name $top $proj_dir
+  build $proj_name $top $proj_dir $reports
 }
 
 proc source_bd_files {bd_files top design_name_internal make_wrapper} {
@@ -381,7 +383,7 @@ proc build_block { filelist build_dir device generics {board 0} {bd_file 0} {top
     set_property generic $k=$v [current_fileset]
   }
 
-  build $proj_name $top_name $proj_dir
+  build $proj_name $top_name $proj_dir $reports
 }
 
 proc clean_proj_if_needed {proj_dir} {
@@ -507,6 +509,7 @@ proc build_device_from_params {params} {
   set make_wrapper [dict_get_default $params make_wrapper 0]
   set power_threshold [dict_get_default $params power_threshold 0]  
   set design_name_internal [dict_get_default $params design_name $top]
+  set reports [dict get $params reports ]																				 
 
   # #############################################################################
 
@@ -696,7 +699,7 @@ set_property -name "steps.write_bitstream.args.verbose" -value "0" -objects $obj
   # set the current impl run
   current_run -implementation [get_runs impl_1]
 
-  build_device $proj_name $top $proj_dir $bd_files $design_name_internal $make_wrapper
+  build_device $proj_name $top $proj_dir $bd_files $design_name_internal $make_wrapper $reports
 }
 
 proc grep { {a} {fs {*}} } {
