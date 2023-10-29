@@ -70,7 +70,7 @@ set lut_util 0
 set ram_util 0
 set total_power 0
 
-proc build {proj_name top_name proj_dir reports bd_name} {
+proc build {proj_name top_name proj_dir reports} {
   global synth_time
   global total_start
   global impl_time
@@ -88,8 +88,7 @@ proc build {proj_name top_name proj_dir reports bd_name} {
   set output_dir [file normalize $proj_dir/../output]
 
   puts "usr_access value: $usr_access"
-  puts "BD NAME: $bd_name"
-  #set bd_name [string range "$top_name" 0 9]
+  
   
   configure_warnings_and_errors
 
@@ -223,7 +222,7 @@ proc build {proj_name top_name proj_dir reports bd_name} {
   set bitstream ${proj_dir}/${proj_name}.runs/impl_1/${top_name}.bit
   
   # ------------------------------------------------------------------------------------- #
-  set report_origin ${proj_dir}/${proj_name}.gen/sources_1/bd/${bd_name}/${reports}
+  set report_origin ${proj_dir}/${reports}
   set report_dest $output_dir/arch.json
   puts "Origin_report: $report_origin"
   puts "Dest_report: $report_dest"
@@ -303,9 +302,9 @@ proc report_stats {} {
   close $stats_chan
 }
 
-proc build_device {proj_name top proj_dir bd_files design_name_internal make_wrapper reports $bd_name} {
+proc build_device {proj_name top proj_dir bd_files design_name_internal make_wrapper reports} {
   source_bd_files $bd_files $top $design_name_internal $make_wrapper
-  build $proj_name $top $proj_dir $reports $bd_name
+  build $proj_name $top $proj_dir $reports
 }
 
 proc source_bd_files {bd_files top design_name_internal make_wrapper} {
@@ -388,7 +387,7 @@ proc build_block { filelist build_dir device generics {board 0} {bd_file 0} {top
     set_property generic $k=$v [current_fileset]
   }
 
-  build $proj_name $top_name $proj_dir $reports $bd_name
+  build $proj_name $top_name $proj_dir $reports
 }
 
 proc clean_proj_if_needed {proj_dir} {
@@ -514,8 +513,7 @@ proc build_device_from_params {params} {
   set make_wrapper [dict_get_default $params make_wrapper 0]
   set power_threshold [dict_get_default $params power_threshold 0]  
   set design_name_internal [dict_get_default $params design_name $top]
-  set reports [dict get $params reports ]	
-  set bd_name [dict get $params bd_name ]	  
+  set reports [dict get $params reports ]		  
 
   # #############################################################################
 
@@ -705,7 +703,7 @@ set_property -name "steps.write_bitstream.args.verbose" -value "0" -objects $obj
   # set the current impl run
   current_run -implementation [get_runs impl_1]
 
-  build_device $proj_name $top $proj_dir $bd_files $design_name_internal $make_wrapper $reports $bd_name
+  build_device $proj_name $top $proj_dir $bd_files $design_name_internal $make_wrapper $reports 
 }
 
 proc grep { {a} {fs {*}} } {
