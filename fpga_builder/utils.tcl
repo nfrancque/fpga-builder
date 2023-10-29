@@ -222,8 +222,12 @@ proc build {proj_name top_name proj_dir reports} {
   set bitstream ${proj_dir}/${proj_name}.runs/impl_1/${top_name}.bit
   
   # ------------------------------------------------------------------------------------- #
-  file copy -force "${proj_dir}/${proj_name}.gen/sources_1/bd/${bd_name}bd/${reports}" "./${output_dir}/arch.json"
-
+  set report_origin ${proj_dir}/${proj_name}.gen/sources_1/bd/${bd_name}bd/${reports}
+  set report_dest $output_dir/arch.json
+  puts "Origin_report: $report_origin"
+  puts "Dest_report: $report_dest"
+  file copy -force report_origin report_dest
+  
   global use_vitis
   if {[file exists $bitstream]} {
     file copy -force $bitstream $output_dir/
