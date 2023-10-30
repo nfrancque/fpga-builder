@@ -224,8 +224,6 @@ proc build {proj_name top_name proj_dir reports} {
   # ------------------------------------------------------------------------------------- #
   set report_origin ${proj_dir}/${reports}
   set report_dest $output_dir/arch.json
-  puts "Origin_report: $report_origin"
-  puts "Dest_report: $report_dest"
   file copy -force $report_origin $report_dest
   
   global use_vitis
