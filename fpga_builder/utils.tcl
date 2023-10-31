@@ -88,7 +88,6 @@ proc build {proj_name top_name proj_dir reports} {
   set output_dir [file normalize $proj_dir/../output]
 
   puts "usr_access value: $usr_access"
-    
   configure_warnings_and_errors
 
   # If anything happened before now, that was setup (BD generation etc)
@@ -225,6 +224,9 @@ proc build {proj_name top_name proj_dir reports} {
   set report_dest ${output_dir}/arch.json
   if {[file exists $report_origin]} {
     file copy -force ${report_origin} ${report_dest}
+  }
+  else{
+    puts "WARNING: The file ${report_origin} does not exist"
   }
   
   global use_vitis
