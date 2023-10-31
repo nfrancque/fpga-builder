@@ -88,8 +88,7 @@ proc build {proj_name top_name proj_dir reports} {
   set output_dir [file normalize $proj_dir/../output]
 
   puts "usr_access value: $usr_access"
-  
-  
+    
   configure_warnings_and_errors
 
   # If anything happened before now, that was setup (BD generation etc)
@@ -223,8 +222,10 @@ proc build {proj_name top_name proj_dir reports} {
   
   # ------------------------------------------------------------------------------------- #
   set report_origin ${proj_dir}/${reports}
-  set report_dest $output_dir/arch.json
-  file copy -force $report_origin $report_dest
+  set report_dest ${output_dir}/arch.json
+  if {[file exists $report_origin]} {
+    file copy -force ${report_origin} ${report_dest}
+  }
   
   global use_vitis
   if {[file exists $bitstream]} {
@@ -511,7 +512,8 @@ proc build_device_from_params {params} {
   set make_wrapper [dict_get_default $params make_wrapper 0]
   set power_threshold [dict_get_default $params power_threshold 0]  
   set design_name_internal [dict_get_default $params design_name $top]
-  set reports [dict get $params reports ]		  
+  set reports [dict_get_default $params reports ""]
+  set reports [dict_get_default $params reports ""]
 
   # #############################################################################
 
