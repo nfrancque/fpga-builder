@@ -514,8 +514,8 @@ proc build_device_from_params {params} {
   set make_wrapper [dict_get_default $params make_wrapper 0]
   set power_threshold [dict_get_default $params power_threshold 0]  
   set design_name_internal [dict_get_default $params design_name $top]
-  set reports [dict_get_default $params reports ""]
-  set reports [dict_get_default $params reports ""]
+  set reports [dict_get_default $params reports "json"]
+
 
   # #############################################################################
 
