@@ -226,7 +226,7 @@ proc build {proj_name top_name proj_dir reports} {
     file copy -force ${report_origin} ${report_dest}
   }
   else{
-    puts "WARNING: The file ${report_origin} does not exist"
+    puts "WARNING: No json provided"
   }
   
   global use_vitis
