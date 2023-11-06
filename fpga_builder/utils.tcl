@@ -224,9 +224,8 @@ proc build {proj_name top_name proj_dir reports} {
   set report_dest ${output_dir}/arch.json
   if {[file exists $report_origin]} {
     file copy -force ${report_origin} ${report_dest}
-  }
-  else{
-    puts "WARNING: No json provided"
+  } else {
+    puts "WARNING: No JSON provided"
   }
   
   global use_vitis
