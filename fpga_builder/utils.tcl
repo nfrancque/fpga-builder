@@ -88,6 +88,7 @@ proc build {proj_name top_name proj_dir reports} {
   set output_dir [file normalize $proj_dir/../output]
 
   puts "usr_access value: $usr_access"
+  
   configure_warnings_and_errors
 
   # If anything happened before now, that was setup (BD generation etc)
@@ -514,7 +515,6 @@ proc build_device_from_params {params} {
   set power_threshold [dict_get_default $params power_threshold 0]  
   set design_name_internal [dict_get_default $params design_name $top]
   set reports [dict_get_default $params reports "json"]
-
 
   # #############################################################################
 
