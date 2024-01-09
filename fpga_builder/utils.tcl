@@ -70,7 +70,7 @@ set lut_util 0
 set ram_util 0
 set total_power 0
 
-proc build {proj_name top_name proj_dir reports} {
+proc build {proj_name top_name proj_dir reports params} {
   global synth_time
   global total_start
   global impl_time
@@ -104,6 +104,14 @@ proc build {proj_name top_name proj_dir reports} {
 
   # Synth
   set start [clock seconds]
+  set pre_synth_tcl [dict_get_default $params pre_synth_tcl ""]
+  if { $pre_synth_tcl != "" } {
+    puts "launch_runs generate scripts only"
+    launch_runs -scripts_only -jobs $max_threads -verbose synth_1
+    source $pre_synth_tcl
+    reset_run synth_1
+  }
+  puts "launch_runs for full synthesis"
   launch_runs -jobs $max_threads -verbose synth_1
   #set synthesis options
   set obj [get_runs synth_1]
@@ -303,9 +311,9 @@ proc report_stats {} {
   close $stats_chan
 }
 
-proc build_device {proj_name top proj_dir bd_files design_name_internal make_wrapper reports} {
+proc build_device {proj_name top proj_dir bd_files design_name_internal make_wrapper reports params} {
   source_bd_files $bd_files $top $design_name_internal $make_wrapper
-  build $proj_name $top $proj_dir $reports
+  build $proj_name $top $proj_dir $reports $params
 }
 
 proc source_bd_files {bd_files top design_name_internal make_wrapper} {
@@ -388,7 +396,7 @@ proc build_block { filelist build_dir device generics {board 0} {bd_file 0} {top
     set_property generic $k=$v [current_fileset]
   }
 
-  build $proj_name $top_name $proj_dir $reports
+  build $proj_name $top_name $proj_dir $reports ""
 }
 
 proc clean_proj_if_needed {proj_dir} {
@@ -621,6 +629,7 @@ proc build_device_from_params {params} {
   set_property report_strategy {Vivado Synthesis Default Reports} $obj
   set_property set_report_strategy_name 0 $obj
 
+
   # Create 'synth_1_synth_report_utilization_0' report (if not found)
   if { [ string equal [get_report_configs -of_objects [get_runs synth_1] synth_1_synth_report_utilization_0] "" ] } {
     create_report_config -report_name synth_1_synth_report_utilization_0 -report_type report_utilization:1.0 -steps synth_design -runs synth_1
@@ -704,7 +713,7 @@ set_property -name "steps.write_bitstream.args.verbose" -value "0" -objects $obj
   # set the current impl run
   current_run -implementation [get_runs impl_1]
 
-  build_device $proj_name $top $proj_dir $bd_files $design_name_internal $make_wrapper $reports 
+  build_device $proj_name $top $proj_dir $bd_files $design_name_internal $make_wrapper $reports $params
 }
 
 proc grep { {a} {fs {*}} } {
