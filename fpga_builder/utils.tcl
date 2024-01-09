@@ -70,7 +70,7 @@ set lut_util 0
 set ram_util 0
 set total_power 0
 
-proc build {proj_name top_name proj_dir reports params} {
+proc build {proj_name top_name proj_dir reports pre_synth_tcl} {
   global synth_time
   global total_start
   global impl_time
@@ -104,7 +104,6 @@ proc build {proj_name top_name proj_dir reports params} {
 
   # Synth
   set start [clock seconds]
-  set pre_synth_tcl [dict_get_default $params pre_synth_tcl ""]
   if { $pre_synth_tcl != "" } {
     puts "launch_runs generate scripts only"
     launch_runs -scripts_only -jobs $max_threads -verbose synth_1
@@ -311,9 +310,9 @@ proc report_stats {} {
   close $stats_chan
 }
 
-proc build_device {proj_name top proj_dir bd_files design_name_internal make_wrapper reports params} {
+proc build_device {proj_name top proj_dir bd_files design_name_internal make_wrapper reports pre_synth_tcl} {
   source_bd_files $bd_files $top $design_name_internal $make_wrapper
-  build $proj_name $top $proj_dir $reports $params
+  build $proj_name $top $proj_dir $reports $pre_synth_tcl
 }
 
 proc source_bd_files {bd_files top design_name_internal make_wrapper} {
@@ -511,6 +510,7 @@ proc build_device_from_params {params} {
   set use_power_opt [dict get $params use_power_opt]
   set use_post_route_phys_opt [dict get $params use_post_route_phys_opt]
   set target_language [dict_get_default $params target_language "vhdl"]
+  set pre_synth_tcl [dict_get_default $params pre_synth_tcl ""]
   set opt_design_tcl_post [dict_get_default $params opt_design_tcl_post ""]
   set opt_design_args_directive [dict_get_default $params opt_design_args_directive "Default"]
   set place_design_args_directive [dict_get_default $params place_design_args_directive "Default"]
@@ -712,7 +712,7 @@ set_property -name "steps.write_bitstream.args.verbose" -value "0" -objects $obj
   # set the current impl run
   current_run -implementation [get_runs impl_1]
 
-  build_device $proj_name $top $proj_dir $bd_files $design_name_internal $make_wrapper $reports $params
+  build_device $proj_name $top $proj_dir $bd_files $design_name_internal $make_wrapper $reports $pre_synth_tcl
 }
 
 proc grep { {a} {fs {*}} } {
