@@ -94,7 +94,7 @@ proc build {proj_name top_name proj_dir reports pre_synth_tcl} {
   # If anything happened before now, that was setup (BD generation etc)
   set setup_time [expr [clock seconds] - $setup_start]
   puts "Building!"
-  set_param general.maxThreads 1
+
   if {$total_start == 0} {
     # Some other methods of running this start the clock earlier
     # Do it here if no one else did
@@ -102,7 +102,9 @@ proc build {proj_name top_name proj_dir reports pre_synth_tcl} {
     set setup_time 0
   }
 
-  # Synth
+  ###################################################
+  # Run Synthesis
+  ###################################################
   set start [clock seconds]
   if { $pre_synth_tcl != "" } {
     puts "launch_runs generate scripts only"
@@ -110,6 +112,8 @@ proc build {proj_name top_name proj_dir reports pre_synth_tcl} {
     source $pre_synth_tcl
     reset_run synth_1
   }
+
+  
   puts "launch_runs for full synthesis"
   launch_runs -jobs $max_threads -verbose synth_1
   #set synthesis options
@@ -118,7 +122,12 @@ proc build {proj_name top_name proj_dir reports pre_synth_tcl} {
   set_property report_strategy {Vivado Synthesis Default Reports} $obj
   set_property set_report_strategy_name 0 $obj
 
+  reset_run synth_1
+  set_param general.maxThreads $max_threads
+  # Run Synthesis bitstream:
+  launch_runs synth_1 -jobs $threads
   wait_on_run synth_1
+  
   if {[get_property PROGRESS [get_runs synth_1]] != "100%"} {
     set failed_runs [get_runs -filter {IS_SYNTHESIS && PROGRESS < 100}]
     set runs_dir ${proj_dir}/${proj_name}.runs/
