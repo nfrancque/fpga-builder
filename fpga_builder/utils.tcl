@@ -125,7 +125,9 @@ proc build {proj_name top_name proj_dir reports pre_synth_tcl} {
   reset_run synth_1
   set_param general.maxThreads $max_threads
   # Run Synthesis bitstream:
-  launch_runs synth_1 -jobs $threads
+  puts "Tesitng 1"
+  launch_runs synth_1 -jobs $max_threads
+  puts "Tesitng 2"
   wait_on_run synth_1
   
   if {[get_property PROGRESS [get_runs synth_1]] != "100%"} {
