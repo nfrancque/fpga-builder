@@ -187,10 +187,7 @@ def build_default(
             else:
                 vivado_version = None
             usr_access = get_usr_access(args, design_versions, device)
-            if other_files or (caller_dir() / "blocks.yaml").exists():
-                # Workaround so doesn't always have to be next to it
-                print("Doing a filelist", other_files, caller_dir())
-                generate_filelist(caller_dir(), run_dir, other_files=other_files)
+
             if design_versions:
                 design_version = design_versions[device]
                 print(design_version)
@@ -205,7 +202,9 @@ def build_default(
                 and_tar,
                 device,
                 usr_access=usr_access,
-                design_version=design_version
+                design_version=design_version,
+                other_files=other_files,
+                proj_dir=caller_dir()
             )
         if do_deploy:
             print(f"Deploying {device}...")
@@ -242,7 +241,9 @@ def build(
     and_tar=False,
     device_name=None,
     usr_access=0,
-    design_version="0.0.0.0"
+    design_version="0.0.0.0",
+    other_files=None,
+    proj_dir=None
 ):
     """
     R the build on the selected device
@@ -265,7 +266,9 @@ def build(
         and_tar,
         device_name,
         usr_access,
-        design_version
+        design_version,
+        other_files=other_files,
+        proj_dir=proj_dir
     )
     stats = get_stats(run_dir, args.num_threads)
     print(stats)
@@ -325,7 +328,9 @@ def run_vivado(
     and_tar=False,
     device_name=None,
     usr_access=0,
-    design_version="0.0.0.0"
+    design_version="0.0.0.0",
+    other_files=None,
+    proj_dir=None
 ):
     """
     Runs vivado to run the build of the selected run directory
@@ -358,6 +363,11 @@ def run_vivado(
             exit(1)
         shutil.rmtree(run_dir)
     output_dir.mkdir(parents=True)
+    if other_files or (proj_dir / "blocks.yaml").exists():
+        print("Doing a filelist", other_files, proj_dir)
+        generate_filelist(proj_dir, run_dir, other_files=other_files)
+    else:
+        print("No file : ", proj_dir , "/blocks.yaml")
     log = output_dir / "vivado.log"
     version_file = output_dir / "version.txt"
 
