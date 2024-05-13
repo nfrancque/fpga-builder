@@ -46,6 +46,7 @@ import sys
 from pprint import pprint
 from os import environ
 import tarfile
+import platform
 
 from .utils import (
     warning,
@@ -187,10 +188,7 @@ def build_default(
             else:
                 vivado_version = None
             usr_access = get_usr_access(args, design_versions, device)
-            if other_files or (caller_dir() / "blocks.yaml").exists():
-                # Workaround so doesn't always have to be next to it
-                print("Doing a filelist", other_files, caller_dir())
-                generate_filelist(caller_dir(), run_dir, other_files=other_files)
+
             if design_versions:
                 design_version = design_versions[device]
                 print(design_version)
@@ -205,7 +203,9 @@ def build_default(
                 and_tar,
                 device,
                 usr_access=usr_access,
-                design_version=design_version
+                design_version=design_version,
+                other_files=other_files,
+                proj_dir=caller_dir()
             )
         if do_deploy:
             print(f"Deploying {device}...")
@@ -242,7 +242,9 @@ def build(
     and_tar=False,
     device_name=None,
     usr_access=0,
-    design_version="0.0.0.0"
+    design_version="0.0.0.0",
+    other_files=None,
+    proj_dir=None
 ):
     """
     R the build on the selected device
@@ -265,7 +267,9 @@ def build(
         and_tar,
         device_name,
         usr_access,
-        design_version
+        design_version,
+        other_files=other_files,
+        proj_dir=proj_dir
     )
     stats = get_stats(run_dir, args.num_threads)
     print(stats)
@@ -325,7 +329,9 @@ def run_vivado(
     and_tar=False,
     device_name=None,
     usr_access=0,
-    design_version="0.0.0.0"
+    design_version="0.0.0.0",
+    other_files=None,
+    proj_dir=None
 ):
     """
     Runs vivado to run the build of the selected run directory
@@ -358,6 +364,11 @@ def run_vivado(
             exit(1)
         shutil.rmtree(run_dir)
     output_dir.mkdir(parents=True)
+    if other_files or (proj_dir / "blocks.yaml").exists():
+        print("Doing a filelist", other_files, proj_dir)
+        generate_filelist(proj_dir, run_dir, other_files=other_files)
+    else:
+        print("No file : ", proj_dir , "/blocks.yaml")
     log = output_dir / "vivado.log"
     version_file = output_dir / "version.txt"
 
@@ -387,7 +398,14 @@ def run_vivado(
         # User args go at front if provided
         args = [str(arg) for arg in tcl_args]
     # Defaults will be at the back so we can use these internally
-    script_path = Path(build_tcl).resolve()
+    platform_sys = platform.system()
+    if (platform_sys == "Linux"):
+        script_path = Path(build_tcl).resolve()
+    elif (platform_sys == "Windows"):
+        script_path_tcl = Path(build_tcl).resolve()
+        script_driver_path = os.getcwd()
+        script_tcl_name = os.path.basename(script_path_tcl)
+        script_path = script_driver_path + script_tcl_name
     args.extend(default_args)
     arg_string = " ".join('"' + item + '"' for item in args)
     cmd_string = f"{vivado_cmd} -mode batch -notrace -log '{log}' -nojournal -source '{script_path}' -tclargs {arg_string}"
@@ -515,12 +533,15 @@ def get_stats_file(run_dir, num_threads):
     """
     import platform
     import os
-    run_directory = run_dir
-
+    platform_sys = platform.system()
+    if (platform_sys == "Linux"):
+        run_directory = run_dir;
+    elif (platform_sys == "Windows"):
+        run_directory =  Path(run_dir)
     hostname = socket.gethostname()
     os = sys.platform
     filename = f"stats_{hostname}_{os}_p{num_threads}.txt"
-    return run_directory / "output" / filename
+    return (run_directory / "output" / filename)
 
 
 def get_stats(run_dir, num_threads):
