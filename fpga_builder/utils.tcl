@@ -517,7 +517,7 @@ proc build_device_from_params {params} {
   set phys_opt_design_is_enabled [dict_get_default $params phys_opt_design_is_enabled "1"]
   set phys_opt_design_args_directive [dict_get_default $params phys_opt_design_args_directive "Default"]
   set route_design_args_directive [dict_get_default $params route_design_args_directive "Default"]
-  set post_route_phys_opt_design_is_enabled [dict_get_default $params post_route_phys_opt_design_args_directive "0"]
+  set post_route_phys_opt_design_is_enabled [dict_get_default $params post_route_phys_opt_design_is_enabled "0"]
   set post_route_phys_opt_design_args_directive [dict_get_default $params post_route_phys_opt_design_args_directive "Default"]
   set make_wrapper [dict_get_default $params make_wrapper 0]
   set power_threshold [dict_get_default $params power_threshold 0]  
