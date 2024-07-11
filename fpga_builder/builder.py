@@ -776,5 +776,5 @@ def build_block(
     # Don't generate a bitstream since this is just for checking stuff
     args.impl_only = True
     build(
-        BUILD_BLK_TCL_SCRIPT, args, build_dir, tcl_args, vivado_version=vivado_version
+        BUILD_BLK_TCL_SCRIPT, args, build_dir, tcl_args, vivado_version=vivado_version, proj_dir=caller_dir()
     )
