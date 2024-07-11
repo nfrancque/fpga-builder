@@ -395,7 +395,7 @@ proc build_block { filelist build_dir device generics {board 0} {bd_file 0} {top
     set_property generic $k=$v [current_fileset]
   }
 
-  build $proj_name $top_name $proj_dir $reports ""
+  build $proj_name $top_name $proj_dir 0 ""
 }
 
 proc clean_proj_if_needed {proj_dir} {

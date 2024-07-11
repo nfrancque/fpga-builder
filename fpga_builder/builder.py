@@ -748,7 +748,7 @@ def build_block(
     other_files = {"vhdl": {"work": dsn_file_tuples}}
     if constraints:
         other_files["xdc"] = constraints
-    generate_filelist(BASE_DIR, build_dir, other_files=other_files)
+    generate_filelist(BASE_DIR, build_dir.parent, other_files=other_files)
 
     if generics is None:
         num_generics = 0
@@ -761,7 +761,7 @@ def build_block(
             generics_pairs.append(value)
 
     tcl_args = [
-        build_dir / "filelist.tcl",
+        build_dir.parent / "filelist.tcl",
         build_dir,
         device,
         board if board is not None else 0,
