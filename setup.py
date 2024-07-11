@@ -43,7 +43,7 @@ setup(
     packages=packages,
     install_requires=read_requirements("requirements.txt"),
     entry_points={"console_scripts": ["project_name = project_name.__main__:main"]},
-    package_data={"fpga_builder": ["utils.tcl"]},
+    package_data={"fpga_builder": ["utils.tcl", "build_block.tcl"]},
     include_package_data=True
     # extras_require={"test": read_requirements("requirements-test.txt")},
 )
