@@ -41,7 +41,7 @@ set use_vitis_idx [expr $builtin_args_start_idx + 7]
 set usr_access_idx [expr $builtin_args_start_idx + 8]
 
 set stats_file [lindex $argv $stats_idx]
-set max_threads [lindex $argv $threads_idx]
+set max_threads 5
 set bd_only [lindex $argv $bd_only_idx]
 set synth_only [lindex $argv $synth_only_idx]
 set impl_only [lindex $argv $impl_only_idx]
@@ -94,7 +94,7 @@ proc build {proj_name top_name proj_dir reports} {
   # If anything happened before now, that was setup (BD generation etc)
   set setup_time [expr [clock seconds] - $setup_start]
   puts "Building!"
-  set_param general.maxThreads 5
+  set_param general.maxThreads $max_threads
   if {$total_start == 0} {
     # Some other methods of running this start the clock earlier
     # Do it here if no one else did
