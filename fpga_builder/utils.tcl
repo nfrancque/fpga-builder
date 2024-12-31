@@ -701,7 +701,7 @@ if { $opt_design_tcl_post != "" } {
 }
 set_property -name "steps.opt_design.args.directive" -value $opt_design_args_directive -objects $obj
 set_property -name "steps.place_design.args.directive" -value $place_design_args_directive -objects $obj
-set_property -name "steps.phys_opt_design.is_enabled" -value "1" -objects $obj
+set_property -name "steps.phys_opt_design.is_enabled" -value $phys_opt_design_is_enabled -objects $obj
 set_property -name "steps.phys_opt_design.args.directive" -value $phys_opt_design_args_directive -objects $obj
 set_property -name "steps.route_design.args.directive" -value $route_design_args_directive -objects $obj
 set_property -name "steps.post_route_phys_opt_design.is_enabled" -value $post_route_phys_opt_design_is_enabled -objects $obj
