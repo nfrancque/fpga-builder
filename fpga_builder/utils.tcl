@@ -94,7 +94,7 @@ proc build {proj_name top_name proj_dir reports pre_synth_tcl} {
   # If anything happened before now, that was setup (BD generation etc)
   set setup_time [expr [clock seconds] - $setup_start]
   puts "Building!"
-  set_param general.maxThreads $max_threads
+  #set_param general.maxThreads $max_threads
   if {$total_start == 0} {
     # Some other methods of running this start the clock earlier
     # Do it here if no one else did
@@ -701,7 +701,7 @@ if { $opt_design_tcl_post != "" } {
 }
 set_property -name "steps.opt_design.args.directive" -value $opt_design_args_directive -objects $obj
 set_property -name "steps.place_design.args.directive" -value $place_design_args_directive -objects $obj
-set_property -name "steps.phys_opt_design.is_enabled" -value $phys_opt_design_is_enabled -objects $obj
+set_property -name "steps.phys_opt_design.is_enabled" -value "1" -objects $obj
 set_property -name "steps.phys_opt_design.args.directive" -value $phys_opt_design_args_directive -objects $obj
 set_property -name "steps.route_design.args.directive" -value $route_design_args_directive -objects $obj
 set_property -name "steps.post_route_phys_opt_design.is_enabled" -value $post_route_phys_opt_design_is_enabled -objects $obj
